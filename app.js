@@ -133,7 +133,7 @@ function vHub(){var h='<div class="hero"><div class="owl big">🦉</div><h1>مر
  h+='<h2>المهارات</h2><div class="grid">';
  D.skills.forEach(function(s){var ready=s.status==='ready',tt=ready?withCur(s.id,totals):null;
   h+='<a class="sk'+(ready?'':' soon')+'" style="--c:'+s.color+'" href="#/'+(ready?'open/'+s.id:'skill/'+s.id)+'"><span class="em">'+s.e+'</span><b>'+esc(s.name)+'</b><small>'+esc(s.short)+'</small><span class="tag">'+(ready?'جاهز · '+pct(tt.c,tt.t)+'%':'جاري البناء')+'</span></a>'});
- h+='</div><p><a class="btn" href="#/compare">📊 قارن المهارات والدخل</a> <a class="btn" href="#/about">ℹ️ كلام صريح وتفاصيل</a></p>';
+ h+='</div><p><a class="btn" href="#/space">🗂️ مساحتي</a> <a class="btn" href="#/compare">📊 قارن المهارات والدخل</a> <a class="btn" href="#/about">ℹ️ كلام صريح وتفاصيل</a></p>';
  view.innerHTML=h}
 function vSkill(id){var s=D.skills.filter(function(x){return x.id===id})[0];if(!s){location.hash='#/';return}
  view.innerHTML=header()+'<a class="back" href="#/">← المهارات</a><div class="card big center"><div class="bigem">'+s.e+'</div><h2>'+esc(s.name)+'</h2><p>'+esc(s.desc)+'</p><div class="note warn"><b>لسه بنبنيه</b>المسار الكامل (خطوات + روابط + Quiz + مشاريع) لسه مش جاهز. الجاهز دلوقتي: مسار AI Engineering. هنضيف الباقي واحدة واحدة.</div></div>'+incomeCard(s)}
@@ -187,7 +187,7 @@ function go(){var h=location.hash.replace(/^#\/?/,''),p=h.split('/');route=p[0]|
  document.querySelectorAll('.tabs a').forEach(function(a){var r=a.getAttribute('data-r');a.setAttribute('aria-current',(r===route||(r===''&&route===''))?'page':'false')});
  if(route==='open'){var k=p[1];if(D.courses[k]){S.cur=k;save();setCur(k)}S.qd=S.qd||{};location.replace(S.qd[k]?'#/today':'#/q/'+k);return}
  if(route==='q'){var k2=p[1];if(D.courses[k2]&&k2!==cur){S.cur=k2;save();setCur(k2)}vQ();return}
- ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,books:vBooks,skill:function(){vSkill(p[1])}}[route]||vHub)();
+ ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,books:vBooks,space:function(){window.vSpace(view)},skill:function(){vSkill(p[1])}}[route]||vHub)();
  if(!p[1]||route==='today')window.scrollTo(0,0)}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-t]');
  if(b){var before=level(xp()).i,pos=b.getBoundingClientRect().top;toggle(b.getAttribute('data-t'));var y=window.scrollY;go();window.scrollTo(0,y);var af=level(xp()).i;if(af>before)toast('🎉 مستوى جديد: '+level(xp()).name);return}
