@@ -154,7 +154,8 @@ function vReady(){S.ready=S.ready||{};var n=0,t=RL().length;RL().forEach(functio
  h+='</section><p class="fine">مفيش موقع بيضمن وظيفة. الخطوات دي بتزود فرصك.</p>';view.innerHTML=h}
 function vSettings(){var h=header()+'<h2>الإعدادات والنسخ الاحتياطي</h2>';
  h+='<section class="card"><h3>اسمك</h3><input id="nm" class="inp" value="'+esc(S.name)+'" placeholder="خالد"></section>';
-h+='<section class="card"><h3>هدفك</h3><p class="sub">مش لازم تخلص المسار كله. اختار الهدف، وارفعه لما تحب. تقدمك بيفضل محفوظ.</p><div class="hsel">'+(C().goals||[]).map(function(g){var n=g.w==='all'?W.length:g.w.length;return '<button class="chip'+((goalOf()||{}).id===g.id?' on':'')+'" data-goal="'+g.id+'">'+g.e+' '+g.name+' · '+n+' أسبوع</button>'}).join('')+'</div><div class="meta">'+esc((goalOf()||{}).note||'')+'</div><div class="meta">الوقت = ساعات الهدف ÷ ساعاتك في اليوم. ده تقدير للساعات المخططة مش وعد بنتيجة.</div></section>';
+h+=dlHtml();
+ h+='<section class="card"><h3>هدفك</h3><p class="sub">مش لازم تخلص المسار كله. اختار الهدف، وارفعه لما تحب. تقدمك بيفضل محفوظ.</p><div class="hsel">'+(C().goals||[]).map(function(g){var n=g.w==='all'?W.length:g.w.length;return '<button class="chip'+((goalOf()||{}).id===g.id?' on':'')+'" data-goal="'+g.id+'">'+g.e+' '+g.name+' · '+n+' أسبوع</button>'}).join('')+'</div><div class="meta">'+esc((goalOf()||{}).note||'')+'</div><div class="meta">الوقت = ساعات الهدف ÷ ساعاتك في اليوم. ده تقدير للساعات المخططة مش وعد بنتيجة.</div></section>';
  h+='<section class="card"><h3>سرعتك</h3><p class="sub">اختار سرعة جاهزة أو عدّل الساعات بنفسك. الجدول والتواريخ بيتحسبوا تاني.</p><div class="hsel">'+PACES.map(function(p){return '<button class="chip'+(curPace()===p[0]?' on':'')+'" data-pace="'+p[0]+'">'+p[1]+' '+p[2]+' · '+p[3]+' س × '+p[4]+' أيام</button>'}).join('')+'</div><div class="meta">'+PACES.map(function(p){return p[1]+' '+p[2]+': '+p[5]}).join('<br>')+'</div><div class="meta">لا السرعة العالية بتضمن إتقان، ولا الهادية بتقلل الفايدة. الاستمرارية أهم.</div></section>';
  h+='<section class="card"><h3>ساعاتك في اليوم</h3><p class="sub">غيّرها في أي وقت. تقدمك بيفضل زي ما هو والجدول بيتحسب تاني.</p><div class="hsel">'+[1,2,3,4,5,6,8].map(function(x){return '<button class="chip'+(x===hpd()?' on':'')+'" data-h="'+x+'">'+x+' س</button>'}).join('')+'</div><div class="meta">'+Object.keys(D.courses).map(function(k){return withCur(k,function(){return esc(C().name)+': '+SEQ.length+' ساعة، '+DAYS+' يوم دراسة، تخلص بعد '+calEnd(DAYS)+' يوم تقويم (حوالي '+Math.round(calEnd(DAYS)/30.4*10)/10+' شهر)'})}).join('<br>')+'</div></section>';
  h+='<section class="card"><h3>ارفع أو نزّل مستواك</h3><p class="sub">اختار المرحلة اللي تبدأ منها في أي وقت، وتقدمك القديم بيفضل محفوظ. لو عندك أساس، اعمل اختبار المرحلة من صفحة الخطة، ولو نجحت ابدأ من اللي بعدها.</p><select id="frm" class="inp">'+C().phases.map(function(p){return '<option value="'+(p.w[0]-1)+'"'+(fromW()===p.w[0]-1?' selected':'')+'>'+esc(p.e+' '+p.t)+'</option>'}).join('')+'</select></section>';
@@ -164,6 +165,8 @@ h+='<section class="card"><h3>هدفك</h3><p class="sub">مش لازم تخلص
  h+='<section class="card"><h3>مسح كل شيء</h3><button class="btn danger" id="rst">مسح التقدم</button></section>';
  view.innerHTML=h;
  $('#nm').addEventListener('change',function(e){S.name=e.target.value.trim().slice(0,30);save()});
+ document.querySelectorAll('[data-dlm]').forEach(function(b){b.addEventListener('click',function(){S.dlm=S.dlm||{};S.dlm[cur]=+b.getAttribute('data-dlm');save();vSettings()})});
+ document.querySelectorAll('[data-dlg]').forEach(function(b){b.addEventListener('click',function(){S.goal=S.goal||{};S.goal[cur]=b.getAttribute('data-dlg');save();setCur(cur);vSettings()})});
  document.querySelectorAll('[data-goal]').forEach(function(b){b.addEventListener('click',function(){S.goal=S.goal||{};S.goal[cur]=b.getAttribute('data-goal');save();setCur(cur);vSettings()})});
  document.querySelectorAll('[data-pace]').forEach(function(b){b.addEventListener('click',function(){var p=PACES.filter(function(x){return x[0]===b.getAttribute('data-pace')})[0];S.hpd=p[3];S.dpw=p[4];save();setCur(cur);vSettings()})});
  document.querySelectorAll('[data-h]').forEach(function(b){b.addEventListener('click',function(){S.hpd=+b.getAttribute('data-h');save();setCur(cur);vSettings()})});
@@ -265,6 +268,15 @@ document.addEventListener('click',function(e){var b=e.target.closest('[data-ci],
  var sg=suggestion();if(!sg)return;S.sg=S.sg||{};
  if(b.hasAttribute('data-sg')){var a=sg.a[+b.getAttribute('data-sg')];if(a[0]==='hpd')S.hpd=a[1];else{S.from=S.from||{};S.from[cur]=a[1]}setCur(cur);toast('اتعدّل الجدول. تقدر ترجع من الإعدادات')}
  S.sg[cur]=sg.k;save();go()});
+
+function goalHours(g){return (g.w==='all'?W.length:g.w.length)*18}
+function dlHtml(){var m=+((S.dlm||{})[cur])||0,gl=C().goals||[],h='<section class="card"><h3>عايز تبدأ شغل خلال كام شهر؟</h3><p class="sub">اختار المدة والموقع يقترح أنسب هدف بسرعتك الحالية ('+hpd()+' س × '+dpw()+' أيام). ده تخطيط مش وعد بوظيفة.</p><div class="hsel">'+[2,3,4,6,9,12].map(function(x){return '<button class="chip'+(m===x?' on':'')+'" data-dlm="'+x+'">'+x+' شهور</button>'}).join('')+'</div>';
+ if(m){var cal=m*30.4,fit=null,rows=gl.map(function(g){var d=Math.ceil(goalHours(g)/hpd()*7/dpw());if(d<=cal)fit=g;return g.e+' '+g.name+': '+goalHours(g)+' ساعة، حوالي '+Math.round(d/30.4*10)/10+' شهر'});
+  h+='<div class="meta">'+rows.join('<br>')+'</div>';
+  if(fit)h+='<div class="note">في '+m+' شهور تقدر توصل لـ: '+fit.e+' '+esc(fit.name)+'. <button class="chip" data-dlg="'+fit.id+'">اضبط الهدف</button></div>';
+  else{var g0=gl[0],need=Math.ceil(goalHours(g0)*7/dpw()/cal);h+='<div class="note warn">المدة دي قصيرة على "'+esc(g0.name)+'" بسرعتك الحالية. محتاج حوالي '+need+' ساعة يوميا (بـ '+dpw()+' أيام في الأسبوع)، وده ثقيل. الأفضل تطوّل المدة أو تقلل الهدف. <button class="chip" data-dlg="'+g0.id+'">اضبط الحد الأدنى وكمّل</button></div>'}
+  h+='<div class="meta">لو اخترت وقت قصير، المشاريع والتطبيق العملي أهم من عدد الموضوعات.</div>'}
+ return h+'</section>'}
 function toast(m){var t=$('#toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},2600)}
 setCur(S.cur||'ai');window.addEventListener('hashchange',go);go();
 })();
