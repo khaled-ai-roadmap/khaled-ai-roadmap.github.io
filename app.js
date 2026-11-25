@@ -89,7 +89,7 @@ function vToday(){var n=todayN(),start=S.start[cur],td=ds(new Date()),before=dif
  if(before)h+='<div class="note">الخطة هتبدأ يوم '+AR(start,{day:'numeric',month:'long'})+'. تقدر تبدأ النهاردة من <a href="#/settings">الإعدادات</a>.</div>';
  var missed=0,first=null;for(var k=1;k<n;k++){var p=dayProg(k);if(p.c<p.t){missed++;if(!first)first=k}}
  if(missed>0)h+='<div class="note warn">متأخر في '+missed+' يوم. مفيش مشكلة: كمّل من آخر نقطة. <a href="#/plan/'+(dayInfo(first).wi)+'">افتح اليوم الفايت</a> أو انقل تاريخ البداية من <a href="#/settings">الإعدادات</a>.</div>';
- h+=dayCard(n,true)+checkin();
+ h+=dayCard(n,true)+companionCard()+checkin();
  var tot=totals(),end=addDays(start,calEnd(DAYS)-1);
  h+='<div class="row2"><div class="mini"><b>'+pct(tot.c,tot.t)+'%</b><span>من الخطة كلها</span></div><div class="mini"><b>'+AR(end,{day:'numeric',month:'short',year:'numeric'})+'</b><span>نهاية الخطة المحددة</span></div></div>';
  if(n<DAYS){h+='<h3>الجاي</h3>';for(var j=n+1;j<=Math.min(DAYS,n+2);j++){var di=dayInfo(j);h+='<div class="peek">'+(j-n===1?'بكرة':'بعد بكرة')+': '+(di.topic?'📌 '+esc(di.topic.t):'🧪 مشروع أو مراجعة')+'</div>'}}
@@ -118,7 +118,7 @@ function vProjects(){var h=header()+'<h2>مشاريعك</h2><p class="sub">ال�
 function vWins(){var x=xp(),lv=level(x),tot=totals(),h=header()+'<h2>إنجازاتي</h2>';
  h+='<section class="card big center"><div class="bigem">'+lv.e+'</div><h3>المستوى '+(lv.i+1)+': '+esc(lv.name)+'</h3><div class="meta">'+x+' XP'+(lv.next?' · الجاي عند '+lv.next:'')+'</div></section>';
  h+='<div class="row2"><div class="mini"><b>'+tot.c+'</b><span>ساعة مذاكرة اتسجلت</span></div><div class="mini"><b>'+streak()+'</b><span>سلسلة الأيام</span></div><div class="mini"><b>'+bestStreak()+'</b><span>أطول سلسلة</span></div><div class="mini"><b>'+published()+'</b><span>مشاريع منشورة</span></div></div>';
- h+='<p><a class="btn pri" href="#/ready">💼 جاهز للشغل؟ قايمة التوظيف</a></p><h3>الأوسمة</h3><div class="badges">';
+ h+='<p><a class="btn pri" href="#/ready">💼 جاهز للشغل؟ قايمة التوظيف</a> <a class="btn" href="#/books">📖 كتب مقترحة</a></p><h3>الأوسمة</h3><div class="badges">';
  BADGES.concat(phaseBadges()).forEach(function(b){var ok=b[2]();h+='<div class="bd'+(ok?' on':'')+'" title="'+esc(b[3])+'"><span>'+(ok?b[0]:'🔒')+'</span><b>'+esc(b[1])+'</b><small>'+esc(b[3])+'</small></div>'});
  h+='</div>';view.innerHTML=h}
 function vQuiz(id){var ph=C().phases.filter(function(p){return p.id===id})[0],qs=C().quizzes[id];if(!ph||!qs){location.hash='#/plan';return}
@@ -154,7 +154,7 @@ function vReady(){S.ready=S.ready||{};var n=0,t=RL().length;RL().forEach(functio
  h+='</section><p class="fine">مفيش موقع بيضمن وظيفة. الخطوات دي بتزود فرصك.</p>';view.innerHTML=h}
 function vSettings(){var h=header()+'<h2>الإعدادات والنسخ الاحتياطي</h2>';
  h+='<section class="card"><h3>اسمك</h3><input id="nm" class="inp" value="'+esc(S.name)+'" placeholder="خالد"></section>';
-h+=dlHtml();
+h+=dlHtml()+pairHtml();
  h+='<section class="card"><h3>هدفك</h3><p class="sub">مش لازم تخلص المسار كله. اختار الهدف، وارفعه لما تحب. تقدمك بيفضل محفوظ.</p><div class="hsel">'+(C().goals||[]).map(function(g){var n=g.w==='all'?W.length:g.w.length;return '<button class="chip'+((goalOf()||{}).id===g.id?' on':'')+'" data-goal="'+g.id+'">'+g.e+' '+g.name+' · '+n+' أسبوع</button>'}).join('')+'</div><div class="meta">'+esc((goalOf()||{}).note||'')+'</div><div class="meta">الوقت = ساعات الهدف ÷ ساعاتك في اليوم. ده تقدير للساعات المخططة مش وعد بنتيجة.</div></section>';
  h+='<section class="card"><h3>سرعتك</h3><p class="sub">اختار سرعة جاهزة أو عدّل الساعات بنفسك. الجدول والتواريخ بيتحسبوا تاني.</p><div class="hsel">'+PACES.map(function(p){return '<button class="chip'+(curPace()===p[0]?' on':'')+'" data-pace="'+p[0]+'">'+p[1]+' '+p[2]+' · '+p[3]+' س × '+p[4]+' أيام</button>'}).join('')+'</div><div class="meta">'+PACES.map(function(p){return p[1]+' '+p[2]+': '+p[5]}).join('<br>')+'</div><div class="meta">لا السرعة العالية بتضمن إتقان، ولا الهادية بتقلل الفايدة. الاستمرارية أهم.</div></section>';
  h+='<section class="card"><h3>ساعاتك في اليوم</h3><p class="sub">غيّرها في أي وقت. تقدمك بيفضل زي ما هو والجدول بيتحسب تاني.</p><div class="hsel">'+[1,2,3,4,5,6,8].map(function(x){return '<button class="chip'+(x===hpd()?' on':'')+'" data-h="'+x+'">'+x+' س</button>'}).join('')+'</div><div class="meta">'+Object.keys(D.courses).map(function(k){return withCur(k,function(){return esc(C().name)+': '+SEQ.length+' ساعة، '+DAYS+' يوم دراسة، تخلص بعد '+calEnd(DAYS)+' يوم تقويم (حوالي '+Math.round(calEnd(DAYS)/30.4*10)/10+' شهر)'})}).join('<br>')+'</div></section>';
@@ -165,6 +165,7 @@ h+=dlHtml();
  h+='<section class="card"><h3>مسح كل شيء</h3><button class="btn danger" id="rst">مسح التقدم</button></section>';
  view.innerHTML=h;
  $('#nm').addEventListener('change',function(e){S.name=e.target.value.trim().slice(0,30);save()});
+ document.querySelectorAll('[data-pair]').forEach(function(b){b.addEventListener('click',function(){S.pair=S.pair||{};var a=S.pair[cur]||[],k=b.getAttribute('data-pair'),i=a.indexOf(k);if(i>=0)a.splice(i,1);else a.push(k);S.pair[cur]=a;save();vSettings()})});
  document.querySelectorAll('[data-dlm]').forEach(function(b){b.addEventListener('click',function(){S.dlm=S.dlm||{};S.dlm[cur]=+b.getAttribute('data-dlm');save();vSettings()})});
  document.querySelectorAll('[data-dlg]').forEach(function(b){b.addEventListener('click',function(){S.goal=S.goal||{};S.goal[cur]=b.getAttribute('data-dlg');save();setCur(cur);vSettings()})});
  document.querySelectorAll('[data-goal]').forEach(function(b){b.addEventListener('click',function(){S.goal=S.goal||{};S.goal[cur]=b.getAttribute('data-goal');save();setCur(cur);vSettings()})});
@@ -184,7 +185,7 @@ function dl(name,txt,mime){var b=new Blob([txt],{type:mime+';charset=utf-8'}),a=
 function go(){var h=location.hash.replace(/^#\/?/,''),p=h.split('/');route=p[0]||'';
  document.querySelectorAll('.tabs a').forEach(function(a){var r=a.getAttribute('data-r');a.setAttribute('aria-current',(r===route||(r===''&&route===''))?'page':'false')});
  if(route==='open'){var k=p[1];if(D.courses[k]){S.cur=k;save();setCur(k)}location.replace('#/today');return}
- ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,skill:function(){vSkill(p[1])}}[route]||vHub)();
+ ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,books:vBooks,skill:function(){vSkill(p[1])}}[route]||vHub)();
  if(!p[1]||route==='today')window.scrollTo(0,0)}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-t]');
  if(b){var before=level(xp()).i,pos=b.getBoundingClientRect().top;toggle(b.getAttribute('data-t'));var y=window.scrollY;go();window.scrollTo(0,y);var af=level(xp()).i;if(af>before)toast('🎉 مستوى جديد: '+level(xp()).name);return}
@@ -277,6 +278,20 @@ function dlHtml(){var m=+((S.dlm||{})[cur])||0,gl=C().goals||[],h='<section clas
   else{var g0=gl[0],need=Math.ceil(goalHours(g0)*7/dpw()/cal);h+='<div class="note warn">المدة دي قصيرة على "'+esc(g0.name)+'" بسرعتك الحالية. محتاج حوالي '+need+' ساعة يوميا (بـ '+dpw()+' أيام في الأسبوع)، وده ثقيل. الأفضل تطوّل المدة أو تقلل الهدف. <button class="chip" data-dlg="'+g0.id+'">اضبط الحد الأدنى وكمّل</button></div>'}
   h+='<div class="meta">لو اخترت وقت قصير، المشاريع والتطبيق العملي أهم من عدد الموضوعات.</div>'}
  return h+'</section>'}
+
+function pairList(){S.pair=S.pair||{};return S.pair[cur]||[]}
+function nextDayOf(id){return withCur(id,function(){for(var k=1;k<=DAYS;k++){var p=dayProg(k);if(p.c<p.t){var di=dayInfo(k);return {k:k,days:DAYS,t:di.topic?di.topic.t:(di.project?di.project.t:'مراجعة'),ph:di.ph.e+' '+di.ph.t,name:C().name,e:C().e}}}return {done:1,name:C().name,e:C().e}})}
+function companionCard(){var pl=pairList().filter(function(k){return k!==cur&&D.courses[k]});if(!pl.length)return '';
+ var h='<section class="card"><h3>🤝 رفيق مهارتك</h3><div class="meta">نص ساعة يوميا أو ساعتين في الأسبوع بجانب مهارتك. بيساعدك تسوّق لنفسك وتكمل.</div>';
+ pl.forEach(function(k){var x=nextDayOf(k);h+='<div class="peek">'+x.e+' '+esc(x.name)+': '+(x.done?'خلصت كل المطلوب 🎉':'يوم '+x.k+' من '+x.days+' · '+esc(x.t)+' <br><a href="#/open/'+k+'"><b>افتح ←</b></a>')+'</div>'});
+ return h+'<div class="meta">لما تفتح الرفيق، ارجع لمهارتك من الصفحة الرئيسية.</div></section>'}
+function pairHtml(){var pl=pairList(),opts=[['biz','💡','Business Mastery'],['mind','🏔️','Mindset والنجاح']].filter(function(o){return o[0]!==cur&&D.courses[o[0]]});if(!opts.length)return '';
+ var h='<section class="card"><h3>🤝 اربط مهارتك بالبيزنس والـ Mindset</h3><p class="sub">عشان تسوّق لنفسك وتبيع مهارتك وتكمل بانتظام. بتظهر في صفحة "النهارده" كرفيق للمهارة.</p><div class="hsel">';
+ opts.forEach(function(o){h+='<button class="chip'+(pl.indexOf(o[0])>=0?' on':'')+'" data-pair="'+o[0]+'">'+o[1]+' '+o[2]+'</button>'});return h+'</div></section>'}
+function booksHtml(){var b=C().books;if(!b||!b.length)return '<div class="note">قايمة الكتب لمسار ده لسه هتتضاف.</div>';
+ var h='<div class="note"><b>الكتب اختيارية</b>الكتب دي بتكمّل المسار، وكلها موجودة فعلا (اتأكدت من Open Library). المسار نفسه مجاني، فلو مش هتشتري، الكتب المجانية والبدائل مكتوبة جنب كل كتاب. ماحطيتش أي روابط تحميل غير قانوني.</div>';
+ b.forEach(function(x){h+='<section class="card"><h3>📖 '+esc(x[0])+'</h3><div class="meta">'+esc(x[1])+'</div><p>'+esc(x[2])+'</p><div class="meta">مكانه في المسار: '+esc(x[3])+' · '+(x[4]==='free'?'🆓 مجاني وقانوني':'💵 مدفوع')+'</div><div class="meta">بديل مجاني: '+esc(x[5])+'</div></section>'});return h}
+function vBooks(){view.innerHTML=header()+'<a class="back" href="#/">← المهارات</a><h2>كتب مقترحة: '+esc(C().name)+'</h2>'+booksHtml()}
 function toast(m){var t=$('#toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},2600)}
 setCur(S.cur||'ai');window.addEventListener('hashchange',go);go();
 })();
