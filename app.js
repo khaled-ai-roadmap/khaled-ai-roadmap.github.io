@@ -280,3 +280,4 @@ function dlHtml(){var m=+((S.dlm||{})[cur])||0,gl=C().goals||[],h='<section clas
 function toast(m){var t=$('#toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},2600)}
 setCur(S.cur||'ai');window.addEventListener('hashchange',go);go();
 })();
+/* v3 */
