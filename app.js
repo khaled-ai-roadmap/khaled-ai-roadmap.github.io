@@ -322,3 +322,9 @@ function toast(m){var t=$('#toast');t.textContent=m;t.className='show';setTimeou
 setCur(S.cur||'ai');window.addEventListener('hashchange',go);go();
 })();
 /* v3 */
+
+(function(){var re=/(^|[\s(\/])و(?=[A-Za-z])/g,re2=/([A-Za-z0-9+#.)])و(?=\s|$)/g;
+function fx(root){var w=document.createTreeWalker(root,4,null),n,a=[];while(n=w.nextNode())a.push(n);a.forEach(function(t){var v=t.nodeValue;if(v.indexOf('و')<0)return;var r=v.replace(/([A-Za-z0-9#.)])\s+و\s*(?=[A-Za-z])/g,'$1 + ').replace(re,'$1و ').replace(re2,'$1 و');if(r!==v)t.nodeValue=r})}
+function run(){fx(document.body)}
+if(window.MutationObserver){var busy=0,o=new MutationObserver(function(){if(busy)return;busy=1;setTimeout(function(){run();busy=0},30)});o.observe(document.body,{childList:true,subtree:true})}
+run()})();
