@@ -153,9 +153,10 @@ function vReady(){S.ready=S.ready||{};var n=0,t=RL().length;RL().forEach(functio
  var h=header()+'<a class="back" href="#/wins">← إنجازاتي</a><h2>جاهز للشغل؟</h2><p class="sub">الدراسة وحدها مش كفاية. دي مخرجات التوظيف اللي لازم تخلصها.</p>'+bar(pct(n,t),'#ffb703')+'<div class="meta">'+n+' من '+t+'</div><section class="card">';
  RL().forEach(function(r,i){var d=!!S.ready[rk(i)];h+='<div class="blk'+(d?' done':'')+'"><button class="ck" data-r="'+i+'" aria-pressed="'+d+'"><span>'+(d?'✓':'')+'</span></button><div class="bt"><div class="bh">'+esc(r[0])+'</div><div class="lks">'+links(r[1])+'</div></div></div>'});
  h+='</section><p class="fine">مفيش موقع بيضمن وظيفة. الخطوات دي بتزود فرصك.</p>';view.innerHTML=h}
+function instHtml(){var st=window.hubInstallState||{};if(st.standalone)return '<section class="card"><h3>تطبيق</h3><p class="sub">أنت شغال من التطبيق المثبت بالفعل.</p></section>';return '<section class="card"><h3>ثبّت الموقع كتطبيق (مجاني)</h3><p class="sub">أندرويد وكروم/إيدج على اللابتوب: دوس الزرار. آيفون: من سفاري دوس زر المشاركة ثم "إضافة إلى الشاشة الرئيسية". التقدم بتاعك محفوظ على جهازك ومش بيتمسح مع التحديثات. بعد أول فتح بيشتغل أوفلاين لما الملفات تتخزن (الروابط الخارجية والخط محتاجين نت).</p><button class="btn pri" id="instbtn">تثبيت التطبيق</button></section>'}
 function vSettings(){var h=header()+'<h2>الإعدادات والنسخ الاحتياطي</h2>';
  h+='<section class="card"><h3>اسمك</h3><input id="nm" class="inp" value="'+esc(S.name)+'" placeholder="خالد"></section>';
-h+='<section class="card"><h3>🧭 أسئلة المسار</h3><p class="sub">غيّر هدفك ووقتك ومستواك والمراحل اللي عايزها لمسار ده.</p><a class="btn pri" href="#/q/'+cur+'">غيّر إجاباتك</a></section>'+dlHtml()+pairHtml();
+h+='<section class="card"><h3>🧭 أسئلة المسار</h3><p class="sub">غيّر هدفك ووقتك ومستواك والمراحل اللي عايزها لمسار ده.</p><a class="btn pri" href="#/q/'+cur+'">غيّر إجاباتك</a></section>'+instHtml()+dlHtml()+pairHtml();
  h+='<section class="card"><h3>هدفك</h3><p class="sub">مش لازم تخلص المسار كله. اختار الهدف، وارفعه لما تحب. تقدمك بيفضل محفوظ.</p><div class="hsel">'+(C().goals||[]).map(function(g){var n=g.w==='all'?W.length:g.w.length;return '<button class="chip'+((goalOf()||{}).id===g.id?' on':'')+'" data-goal="'+g.id+'">'+g.e+' '+g.name+' · '+n+' أسبوع</button>'}).join('')+'</div><div class="meta">'+esc((goalOf()||{}).note||'')+'</div><div class="meta">الوقت = ساعات الهدف ÷ ساعاتك في اليوم. ده تقدير للساعات المخططة مش وعد بنتيجة.</div></section>';
  h+='<section class="card"><h3>سرعتك</h3><p class="sub">اختار سرعة جاهزة أو عدّل الساعات بنفسك. الجدول والتواريخ بيتحسبوا تاني.</p><div class="hsel">'+PACES.map(function(p){return '<button class="chip'+(curPace()===p[0]?' on':'')+'" data-pace="'+p[0]+'">'+p[1]+' '+p[2]+' · '+p[3]+' س × '+p[4]+' أيام</button>'}).join('')+'</div><div class="meta">'+PACES.map(function(p){return p[1]+' '+p[2]+': '+p[5]}).join('<br>')+'</div><div class="meta">لا السرعة العالية بتضمن إتقان، ولا الهادية بتقلل الفايدة. الاستمرارية أهم.</div></section>';
  h+='<section class="card"><h3>ساعاتك في اليوم</h3><p class="sub">غيّرها في أي وقت. تقدمك بيفضل زي ما هو والجدول بيتحسب تاني.</p><div class="hsel">'+[1,2,3,4,5,6,8].map(function(x){return '<button class="chip'+(x===hpd()?' on':'')+'" data-h="'+x+'">'+x+' س</button>'}).join('')+'</div><div class="meta">'+Object.keys(D.courses).map(function(k){return withCur(k,function(){return esc(C().name)+': '+SEQ.length+' ساعة، '+DAYS+' يوم دراسة، تخلص بعد '+calEnd(DAYS)+' يوم تقويم (حوالي '+Math.round(calEnd(DAYS)/30.4*10)/10+' شهر)'})}).join('<br>')+'</div></section>';
@@ -328,3 +329,11 @@ function fx(root){var w=document.createTreeWalker(root,4,null),n,a=[];while(n=w.
 function run(){fx(document.body)}
 if(window.MutationObserver){var busy=0,o=new MutationObserver(function(){if(busy)return;busy=1;setTimeout(function(){run();busy=0},30)});o.observe(document.body,{childList:true,subtree:true})}
 run()})();
+
+(function(){if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+var dp=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;var b=document.getElementById('instbtn');if(b)b.hidden=false});
+window.hubInstall=function(){if(dp){dp.prompt();dp=null;return true}return false};
+var ios=/iphone|ipad|ipod/i.test(navigator.userAgent),sa=window.matchMedia&&matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+window.hubInstallState={ios:ios,standalone:!!sa}})();
+
+document.addEventListener('click',function(e){if(e.target&&e.target.id==='instbtn'){if(!window.hubInstall())alert('لو الزرار ما اشتغلش: من قائمة المتصفح اختار "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".')}});
