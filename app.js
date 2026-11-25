@@ -29,7 +29,7 @@ function addDays(s,n){var d=pd(s);d.setDate(d.getDate()+n);return ds(d)}
 function diffDays(a,b){return Math.round((pd(a)-pd(b))/864e5)}
 function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function $(s,r){return (r||document).querySelector(s)}
-var AR=function(d,o){return pd(d).toLocaleDateString('ar-EG',o)};
+var AR=function(d,o){return pd(d).toLocaleDateString((window.hubLang&&({ar:'ar-EG',en:'en-GB',fr:'fr-FR',es:'es-ES',de:'de-DE'})[window.hubLang.cur])||'ar-EG',o)};
 // ---- model
 function dayInfo(n){var h=hpd(),it=SEQ.slice((n-1)*h,n*h),f=it[0]||SEQ[SEQ.length-1],tp=null,pj=null;it.forEach(function(x){if(!tp&&x.topic)tp=x.topic;if(!pj&&x.project)pj=x.project});
  return{n:n,wi:f.wi,w:W[f.wi],ph:f.ph,topic:tp,project:pj,blocks:it.map(function(x){return{k:x.b.k,e:x.b.e,t:x.b.t,links:x.b.links,id:x.id}})}}
