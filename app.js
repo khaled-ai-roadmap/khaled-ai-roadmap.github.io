@@ -78,7 +78,7 @@ function blockRow(n,i,b){var id=b.id,d=isDone(id);
  return '<div class="blk'+(d?' done':'')+'"><button class="ck" data-t="'+id+'" aria-pressed="'+d+'" aria-label="علّم كمكتمل"><span>'+(d?'✓':'')+'</span></button><div class="bt"><div class="bh">'+b.e+' '+esc(b.t)+'</div>'+(b.links?'<div class="lks">'+links(b.links)+'</div>':'')+'</div></div>'}
 function dayCard(n,big){var di=dayInfo(n),p=dayProg(n);
  var head=di.topic?'📌 '+esc(di.topic.t):'🧪 '+(di.project?esc(di.project.t):'يوم مراجعة');
- return '<section class="card'+(big?' big':'')+'"><div class="meta">اليوم '+n+' من '+DAYS+' · أسبوع '+(di.wi+1)+' · '+esc(di.ph.e+' '+di.ph.t)+'</div><h2>'+head+'</h2>'+bar(pct(p.c,p.t))+'<div class="meta">'+p.c+' من '+p.t+' ساعة خلصت</div>'+di.blocks.map(function(b,i){return blockRow(n,i,b)}).join('')+'</section>'}
+ return '<section class="card'+(big?' big':'')+'"><div class="meta">اليوم '+n+' من '+DAYS+' · أسبوع '+(di.wi+1)+' · '+esc(di.ph.e+' '+di.ph.t)+'</div><h2>'+head+'</h2>'+bar(pct(p.c,p.t))+'<div class="meta">'+p.c+' من '+p.t+' ساعة خلصت</div>'+askAI(di)+di.blocks.map(function(b,i){return blockRow(n,i,b)}).join('')+'</section>'}
 function vToday(){var n=todayN(),start=S.start[cur],td=ds(new Date()),before=diffDays(td,start)<0;
  var h=header()+'<div class="hello"><div class="owl">🦉</div><div><b>'+(S.name?'أهلا يا '+esc(S.name):'أهلا يا بطل')+'</b><div class="sub">'+AR(td,{weekday:'long',day:'numeric',month:'long'})+'</div></div></div>';
  if(before)h+='<div class="note">الخطة هتبدأ يوم '+AR(start,{day:'numeric',month:'long'})+'. تقدر تبدأ النهاردة من <a href="#/settings">الإعدادات</a>.</div>';
@@ -172,7 +172,7 @@ function dl(name,txt,mime){var b=new Blob([txt],{type:mime+';charset=utf-8'}),a=
 function go(){var h=location.hash.replace(/^#\/?/,''),p=h.split('/');route=p[0]||'';
  document.querySelectorAll('.tabs a').forEach(function(a){var r=a.getAttribute('data-r');a.setAttribute('aria-current',(r===route||(r===''&&route===''))?'page':'false')});
  if(route==='open'){var k=p[1];if(D.courses[k]){S.cur=k;save();setCur(k)}location.replace('#/today');return}
- ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,start:vStart,ready:vReady,skill:function(){vSkill(p[1])}}[route]||vHub)();
+ ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,skill:function(){vSkill(p[1])}}[route]||vHub)();
  if(!p[1]||route==='today')window.scrollTo(0,0)}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-t]');
  if(b){var before=level(xp()).i,pos=b.getBoundingClientRect().top;toggle(b.getAttribute('data-t'));var y=window.scrollY;go();window.scrollTo(0,y);var af=level(xp()).i;if(af>before)toast('🎉 مستوى جديد: '+level(xp()).name);return}
@@ -221,6 +221,26 @@ document.addEventListener('click',function(e){var b=e.target.closest('[data-g],[
  if(b.id==='obgo'){S.hpd=o.h;save();var f=o.g.filter(function(k){return D.courses[k]})[0];if(f){S.cur=f;save();setCur(f)}location.hash='#/today';return}
  if(b.hasAttribute('data-g')){var k=b.getAttribute('data-g'),i=o.g.indexOf(k);if(i>-1)o.g.splice(i,1);else o.g.push(k)}
  if(b.hasAttribute('data-l'))o.lv=b.getAttribute('data-l');if(b.hasAttribute('data-oh'))o.h=+b.getAttribute('data-oh');save();vStart()});
+
+// ---- ask AI
+function askAI(di){var t=di.topic?di.topic.t:(di.project?di.project.t:'مراجعة الأسبوع'),q='أنا طالب بتعلم "'+C().name+'" من الصفر. اشرحلي "'+t+'" ببساطة بالعربي المصري مع مثال عملي، وبعدين اسألني 3 أسئلة تمرين وصحح إجاباتي.';
+ return '<div class="ask"><span>🤖 عالق؟ انسخ السؤال وافتح:</span> <a href="https://chatgpt.com" target="_blank" rel="noopener" data-ask="'+esc(q)+'">ChatGPT</a><a href="https://gemini.google.com" target="_blank" rel="noopener" data-ask="'+esc(q)+'">Gemini</a><a href="https://claude.ai" target="_blank" rel="noopener" data-ask="'+esc(q)+'">Claude</a></div>'}
+document.addEventListener('click',function(e){var a=e.target.closest('[data-ask]');if(!a)return;var t=a.getAttribute('data-ask');try{navigator.clipboard.writeText(t).then(function(){toast('اتنسخ السؤال. الصقه في الشات')},function(){toast('افتح الشات واكتب سؤالك')})}catch(x){toast('افتح الشات واكتب سؤالك')}});
+// ---- placement
+var PL={i:0,sc:[]};
+function plLevels(){return C().phases.filter(function(p){return C().quizzes[p.id]&&p.id!=='aix'&&p.id!=='p7'&&p.w})}
+function vPlace(){var L=plLevels(),h=header()+'<h2>اختبار تحديد المستوى</h2><p class="sub">'+esc(C().name)+'. الاختبار بيمشي مرحلة مرحلة وبيقف لما تغلط كتير. ده تقدير، مش شهادة.</p>';
+ if(PL.cur!==cur){PL={i:0,sc:[],cur:cur}}
+ h+='<p><button class="btn" id="plz">ابدأ من الصفر بدون اختبار</button></p>';
+ if(PL.i>=L.length||PL.done){var st=PL.done!==undefined?PL.done:L.length-1;view.innerHTML=h+'<section class="card"><h3>مستواك التقريبي: '+esc(L[st].e+' '+L[st].t)+'</h3><p class="sub">هنبدأ بيك من المرحلة دي.</p><button class="btn pri" id="plgo" data-st="'+st+'">ابدأ من هنا</button> <button class="btn" id="plre">أعد الاختبار</button></section>';bindPl();return}
+ var ph=L[PL.i],qs=C().quizzes[ph.id];h+='<p class="meta">مرحلة '+(PL.i+1)+' من '+L.length+': '+esc(ph.t)+'</p><form id="plf">';
+ qs.forEach(function(q,i){h+='<section class="card"><b>'+(i+1)+'. '+esc(q[0])+'</b>';q[1].forEach(function(o,j){h+='<label class="opt"><input type="radio" name="q'+i+'" value="'+j+'"><span>'+esc(o)+'</span></label>'});h+='</section>'});
+ h+='<button class="btn pri" type="submit">التالي</button></form>';view.innerHTML=h;bindPl();
+ var f=$('#plf');if(f)f.addEventListener('submit',function(e){e.preventDefault();var sc=0;qs.forEach(function(q,i){var v=document.querySelector('input[name=q'+i+']:checked');if(v&&+v.value===q[2])sc++});
+  if(sc>=qs.length-1){PL.i++}else{PL.done=PL.i}window.scrollTo(0,0);vPlace()})}
+function bindPl(){var z=$('#plz');if(z)z.addEventListener('click',function(){S.from=S.from||{};S.from[cur]=0;save();setCur(cur);PL={i:0,sc:[],cur:cur};location.hash='#/today'});
+ var g=$('#plgo');if(g)g.addEventListener('click',function(){var L=plLevels(),ph=L[+g.getAttribute('data-st')];S.from=S.from||{};S.from[cur]=ph.w[0]-1;save();setCur(cur);PL={i:0,sc:[],cur:cur};location.hash='#/today'});
+ var r=$('#plre');if(r)r.addEventListener('click',function(){PL={i:0,sc:[],cur:cur};vPlace()})}
 function toast(m){var t=$('#toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},2600)}
 setCur(S.cur||'ai');window.addEventListener('hashchange',go);go();
 })();
