@@ -1,12 +1,16 @@
 (function(){
 'use strict';
-var D=window.DATA, KEY='learnhub.v2', DAYS=D.ai.weeks.length*7;
+var D=window.DATA, KEY='learnhub.v2', cur='ai', W, DAYS;
+function C(){return D.courses[cur]}
+function setCur(k){cur=k;W=C().weeks;DAYS=W.length*7}
+function withCur(k,fn){var o=cur;setCur(k);var r=fn();setCur(o);return r}
+function each(fn){var o=cur;Object.keys(D.courses).forEach(function(k){setCur(k);fn(k)});setCur(o)}
 var LV=[[0,'🥚','بيضة'],[100,'🐣','كتكوت فضولي'],[300,'🌱','بذرة بتكبر'],[700,'🚀','منطلق'],[1300,'🧠','مبرمج صغير'],[2200,'🔥','متحمس محترف'],[3600,'⚡','مهندس صاعد'],[5500,'🏆','خبير'],[8000,'👑','جاهز للشغل'],[11000,'🌟','أسطورة']];
 var S=load();
 function load(){var s;try{s=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
  if(!s||typeof s!=='object')s={};
  s.v=2;s.start=s.start||{};s.done=s.done||{};s.proj=s.proj||{};s.quiz=s.quiz||{};s.log=s.log||{};s.name=s.name||'';s.remind=s.remind||'20:00';
- if(!s.start.ai)s.start.ai=ds(new Date());return s}
+ s.cur=s.cur&&D.courses[s.cur]?s.cur:'ai';Object.keys(D.courses).forEach(function(k){if(!s.start[k])s.start[k]=ds(new Date())});return s}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function ds(d){var z=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)}
 function pd(s){var a=s.split('-');return new Date(+a[0],+a[1]-1,+a[2])}
@@ -16,17 +20,16 @@ function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;
 function $(s,r){return (r||document).querySelector(s)}
 var AR=function(d,o){return pd(d).toLocaleDateString('ar-EG',o)};
 // ---- model
-var W=D.ai.weeks;
-function dayInfo(n){var wi=Math.floor((n-1)/7),dow=(n-1)%7+1,w=W[wi],ph=D.ai.phases.filter(function(p){return p.id===w.p})[0];var blocks;
+function dayInfo(n){var wi=Math.floor((n-1)/7),dow=(n-1)%7+1,w=W[wi],ph=C().phases.filter(function(p){return p.id===w.p})[0];var blocks;
  if(dow<=5){var idx=Math.min(w.topics.length-1,Math.floor((dow-1)*w.topics.length/5)),t=w.topics[idx];
-  blocks=[{k:'learn',e:'📖',t:'اتعلّم: '+t.t,links:t.links},{k:'do',e:'🛠️',t:'طبّق: اكتب كود أو ملاحظات صغيرة عن "'+t.t+'"'},{k:'rev',e:'✍️',t:'راجع واكتب ملخص 3 سطور بإيدك'}];
+  blocks=[{k:'learn',e:'📖',t:'اتعلّم: '+t.t,links:t.links},{k:'do',e:'🛠️',t:C().labels.d.replace('{t}',t.t)},{k:'rev',e:'✍️',t:C().labels.r}];
   return{n:n,wi:wi,dow:dow,w:w,ph:ph,topic:t,blocks:blocks}}
- if(dow===6){var pj=w.proj?D.ai.projects[w.proj]:null;
-  blocks=pj?[{k:'proj',e:'🧪',t:'مشروع: '+pj.t+' (ابدأ أو كمّل)'},{k:'proj',e:'💻',t:'اكتب الكود وجرّب'},{k:'rev',e:'📝',t:'حدّث الـ README وارفع على GitHub'}]
-  :[{k:'rev',e:'🔁',t:'راجع مواضيع الأسبوع كلها (ملخصاتك)'},{k:'do',e:'🛠️',t:'حل تمرين إضافي على أصعب موضوع'},{k:'rev',e:'📝',t:'اكتب 5 أسطر: إيه اللي اتعلمته الأسبوع ده'}];
+ if(dow===6){var pj=w.proj?C().projects[w.proj]:null;
+  blocks=pj?[{k:'proj',e:'🧪',t:C().labels.p+pj.t+' (ابدأ أو كمّل)'},{k:'proj',e:'💻',t:C().labels.p2},{k:'rev',e:'📝',t:C().labels.p3}]
+  :[{k:'rev',e:'🔁',t:'راجع مواضيع الأسبوع كلها (ملخصاتك)'},{k:'do',e:'🛠️',t:C().labels.x},{k:'rev',e:'📝',t:'اكتب 5 أسطر: إيه اللي اتعلمته الأسبوع ده'}];
   return{n:n,wi:wi,dow:dow,w:w,ph:ph,project:pj,blocks:blocks}}
  return{n:n,wi:wi,dow:7,w:w,ph:ph,rest:true,blocks:[{k:'rest',e:'🌿',t:'يوم راحة: ساعة مراجعة خفيفة أو لعب بالكود، وبعدها ارتاح'}]}}
-function bid(n,b){return 'ai:'+n+':'+b}
+function bid(n,b){return cur+':'+n+':'+b}
 function isDone(id){return !!S.done[id]}
 function toggle(id){var d=ds(new Date());if(S.done[id]){delete S.done[id];S.log[d]=Math.max(0,(S.log[d]||1)-1);if(!S.log[d])delete S.log[d]}else{S.done[id]=Date.now();S.log[d]=(S.log[d]||0)+1}save()}
 function dayProg(n){var di=dayInfo(n),c=0;di.blocks.forEach(function(b,i){if(isDone(bid(n,i)))c++});return{c:c,t:di.blocks.length}}
@@ -34,45 +37,47 @@ function totals(){var c=0,t=0;for(var n=1;n<=DAYS;n++){var p=dayProg(n);c+=p.c;t
 function phaseProg(ph){var c=0,t=0;for(var n=(ph.w[0]-1)*7+1;n<=ph.w[1]*7;n++){var p=dayProg(n);c+=p.c;t+=p.t}return{c:c,t:t}}
 function weekProg(wi){var c=0,t=0;for(var n=wi*7+1;n<=wi*7+7;n++){var p=dayProg(n);c+=p.c;t+=p.t}return{c:c,t:t}}
 var PJ_STEPS=['فهمت الفكرة وكتبت الـ brief','الكود شغال','التقييم والنتايج','README احترافي','Demo أو نشر','منشور على GitHub'];
-function pjState(id){var a=S.proj['ai:'+id]||[];var c=0;for(var i=0;i<6;i++)if(a[i])c++;return c}
+function pjState(id){var a=S.proj[cur+':'+id]||[];var c=0;for(var i=0;i<6;i++)if(a[i])c++;return c}
 function pjStatus(c){return c===0?['لسه','#9aa0a6']:c===6?['منشور 🎉','#2f9e8f']:['شغال','#f2994a']}
 function quizXp(){var x=0;for(var k in S.quiz)x+=(S.quiz[k].best||0)*10;return x}
-function xp(){var t=totals().c*10,p=0;for(var k in S.proj){for(var i=0;i<6;i++)if(S.proj[k][i])p+=25}return t+p+quizXp()}
+function allBlocks(){var s=0;each(function(){s+=totals().c});return s}
+function xp(){var t=allBlocks()*10,p=0;for(var k in S.proj){for(var i=0;i<6;i++)if(S.proj[k][i])p+=25}return t+p+quizXp()}
 function level(x){var i=0;for(var j=0;j<LV.length;j++)if(x>=LV[j][0])i=j;var nx=LV[i+1];return{i:i,e:LV[i][1],name:LV[i][2],cur:LV[i][0],next:nx?nx[0]:null}}
 function streak(){var d=ds(new Date()),s=0;if(!S.log[d])d=addDays(d,-1);while(S.log[d]){s++;d=addDays(d,-1)}return s}
 function bestStreak(){var ks=Object.keys(S.log).sort(),b=0,c=0,p=null;ks.forEach(function(k){c=(p&&diffDays(k,p)===1)?c+1:1;if(c>b)b=c;p=k});return b}
-function todayN(){var n=diffDays(ds(new Date()),S.start.ai)+1;return Math.max(1,Math.min(DAYS,n))}
-function published(){var c=0;D.ai.projectOrder.forEach(function(id){if(pjState(id)===6)c++});return c}
+function todayN(){var n=diffDays(ds(new Date()),S.start[cur])+1;return Math.max(1,Math.min(DAYS,n))}
+function published(){var c=0;each(function(){C().projectOrder.forEach(function(id){if(pjState(id)===6)c++})});return c}
 var BADGES=[
- ['🌟','أول خطوة',function(){return totals().c>=1},'خلّص أول مهمة'],
- ['🔟','10 مهام',function(){return totals().c>=10},'10 مهام مكتملة'],
- ['💯','100 مهمة',function(){return totals().c>=100},'100 مهمة مكتملة'],
+ ['🌟','أول خطوة',function(){return allBlocks()>=1},'خلّص أول مهمة'],
+ ['🔟','10 مهام',function(){return allBlocks()>=10},'10 مهام مكتملة'],
+ ['💯','100 مهمة',function(){return allBlocks()>=100},'100 مهمة مكتملة'],
  ['🔥','3 أيام ورا بعض',function(){return bestStreak()>=3},'سلسلة 3 أيام'],
  ['🔥','أسبوع كامل',function(){return bestStreak()>=7},'سلسلة 7 أيام'],
  ['🏅','شهر كامل',function(){return bestStreak()>=30},'سلسلة 30 يوم'],
- ['📚','أول أسبوع مكتمل',function(){for(var i=0;i<W.length;i++){var p=weekProg(i);if(p.c===p.t)return true}return false},'أكمل كل مهام أسبوع'],
+ ['📚','أول أسبوع مكتمل',function(){var ok=false;each(function(){for(var i=0;i<W.length;i++){var p=weekProg(i);if(p.c===p.t)ok=true}});return ok},'أكمل كل مهام أسبوع'],
  ['🧪','أول مشروع منشور',function(){return published()>=1},'مشروع واحد بكل الخطوات'],
  ['🧳','5 مشاريع منشورة',function(){return published()>=5},'5 مشاريع كاملة'],
  ['💼','10 مشاريع منشورة',function(){return published()>=10},'بورتفوليو قوي'],
  ['🎯','أول Quiz',function(){return Object.keys(S.quiz).length>=1},'خلّص quiz'],
  ['🧠','Quiz كامل 6/6',function(){for(var k in S.quiz)if(S.quiz[k].best>=6)return true;return false},'درجة كاملة'],
- ['⛰️','نص الطريق',function(){var t=totals();return t.c>=t.t/2},'50% من الخطة'],
- ['👑','خلصت الخطة',function(){var t=totals();return t.c>=t.t},'100% من الخطة']
-].concat(D.ai.phases.map(function(ph){return[ph.e,'خلصت: '+ph.t,function(){var p=phaseProg(ph);return p.c===p.t},'أكمل مرحلة '+ph.n]}));
+ ['⛰️','نص الطريق',function(){var t=totals();return withCur('ai',function(){var t=totals();return t.c>=t.t/2})},'50% من الخطة'],
+ ['👑','خلصت الخطة',function(){return withCur('ai',function(){var t=totals();return t.c>=t.t})},'100% من الخطة']
+];
+function phaseBadges(){var r=[];each(function(k){C().phases.forEach(function(ph){r.push([ph.e,k.toUpperCase()+': '+ph.t,function(){return withCur(k,function(){var p=phaseProg(ph);return p.c===p.t})},'أكمل مرحلة '+ph.n])})});return r}
 // ---- views
 var view=$('#view'),route='';
 function pct(c,t){return t?Math.round(c/t*100):0}
 function bar(p,col){return '<div class="bar"><i style="width:'+p+'%'+(col?';background:'+col:'')+'"></i></div>'}
 function header(){var x=xp(),lv=level(x),st=streak();
  var pp=lv.next?pct(x-lv.cur,lv.next-lv.cur):100;
- return '<div class="top"><div class="chips"><span class="chip">'+lv.e+' '+esc(lv.name)+'</span><span class="chip">⭐ '+x+' XP</span><span class="chip">🔥 '+st+' يوم</span></div>'+bar(pp,'#ffb703')+'</div>'}
+ return '<div class="top"><div class="chips"><a class="chip" href="#/" style="text-decoration:none;color:inherit">'+C().e+' '+esc(C().name)+' ▾</a><span class="chip">'+lv.e+' '+esc(lv.name)+'</span><span class="chip">⭐ '+x+' XP</span><span class="chip">🔥 '+st+' يوم</span></div>'+bar(pp,'#ffb703')+'</div>'}
 function links(ls){return ls.map(function(l){return '<a class="lnk" href="'+esc(l[1])+'" target="_blank" rel="noopener">🔗 '+esc(l[0])+'</a>'}).join('')}
 function blockRow(n,i,b){var id=bid(n,i),d=isDone(id);
  return '<div class="blk'+(d?' done':'')+'"><button class="ck" data-t="'+id+'" aria-pressed="'+d+'" aria-label="علّم كمكتمل"><span>'+(d?'✓':'')+'</span></button><div class="bt"><div class="bh">'+b.e+' '+esc(b.t)+'</div>'+(b.links?'<div class="lks">'+links(b.links)+'</div>':'')+'</div></div>'}
 function dayCard(n,big){var di=dayInfo(n),p=dayProg(n);
  var head=di.rest?'🌿 يوم راحة':(di.dow===6?'🧪 يوم المشروع':'📌 '+esc(di.topic.t));
  return '<section class="card'+(big?' big':'')+'"><div class="meta">اليوم '+n+' من '+DAYS+' · أسبوع '+(di.wi+1)+' · '+esc(di.ph.e+' '+di.ph.t)+'</div><h2>'+head+'</h2>'+bar(pct(p.c,p.t))+'<div class="meta">'+p.c+' من '+p.t+' ساعات خلصت</div>'+di.blocks.map(function(b,i){return blockRow(n,i,b)}).join('')+'</section>'}
-function vToday(){var n=todayN(),start=S.start.ai,td=ds(new Date()),before=diffDays(td,start)<0;
+function vToday(){var n=todayN(),start=S.start[cur],td=ds(new Date()),before=diffDays(td,start)<0;
  var h=header()+'<div class="hello"><div class="owl">🦉</div><div><b>'+(S.name?'أهلا يا '+esc(S.name):'أهلا يا بطل')+'</b><div class="sub">'+AR(td,{weekday:'long',day:'numeric',month:'long'})+'</div></div></div>';
  if(before)h+='<div class="note">الخطة هتبدأ يوم '+AR(start,{day:'numeric',month:'long'})+'. تقدر تبدأ النهاردة من <a href="#/settings">الإعدادات</a>.</div>';
  var missed=0,first=null;for(var k=1;k<n;k++){var p=dayProg(k);if(p.c<p.t&&dayInfo(k).dow<=6){missed++;if(!first)first=k}}
@@ -84,19 +89,19 @@ function vToday(){var n=todayN(),start=S.start.ai,td=ds(new Date()),before=diffD
  h+='<p class="fine">الموقع ثابت ومفيهوش إشعارات. للتذكير اليومي نزّل ملف التقويم من <a href="#/settings">الإعدادات</a>.</p>';
  view.innerHTML=h}
 function vPlan(arg){var h=header(),wi=arg!==''&&arg!=null?+arg:null;
- if(wi!==null&&!isNaN(wi)&&W[wi]){var w=W[wi],ph=D.ai.phases.filter(function(p){return p.id===w.p})[0],p=weekProg(wi);
+ if(wi!==null&&!isNaN(wi)&&W[wi]){var w=W[wi],ph=C().phases.filter(function(p){return p.id===w.p})[0],p=weekProg(wi);
   h+='<a class="back" href="#/plan">← كل المراحل</a><h2>أسبوع '+(wi+1)+': '+esc(w.title)+'</h2><div class="meta">'+esc(ph.e+' '+ph.t)+' · '+p.c+' من '+p.t+'</div>'+bar(pct(p.c,p.t));
   for(var n=wi*7+1;n<=wi*7+7;n++)h+=dayCard(n,false);
   h+='<div class="pager">'+(wi>0?'<a class="btn" href="#/plan/'+(wi-1)+'">← الأسبوع اللي قبله</a>':'<span></span>')+(wi<W.length-1?'<a class="btn" href="#/plan/'+(wi+1)+'">الأسبوع اللي بعده →</a>':'')+'</div>';
   view.innerHTML=h;return}
- h+='<h2>الخطة: 56 أسبوع</h2><p class="sub">3 ساعات يوميا. 5 أيام تعلم، يوم مشروع، يوم راحة.</p>';
- D.ai.phases.forEach(function(ph){var p=phaseProg(ph),q=S.quiz['ai:'+ph.id];
+ h+='<h2>الخطة: '+W.length+' أسبوع</h2><p class="sub">3 ساعات يوميا. 5 أيام تعلم، يوم تطبيق ومشروع، يوم راحة.</p>';
+ C().phases.forEach(function(ph){var p=phaseProg(ph),q=S.quiz[cur+':'+ph.id];
   h+='<section class="card"><div class="ph"><span class="em">'+ph.e+'</span><div><h3>'+ph.n+'. '+esc(ph.t)+'</h3><div class="meta">أسابيع '+ph.w[0]+' إلى '+ph.w[1]+' · '+p.c+' من '+p.t+'</div></div></div>'+bar(pct(p.c,p.t),'#2f9e8f')+'<p class="sub">'+esc(ph.goal)+'</p><div class="weeks">';
   for(var i=ph.w[0]-1;i<ph.w[1];i++){var wp=weekProg(i);h+='<a class="wk'+(wp.c===wp.t?' full':'')+'" href="#/plan/'+i+'"><b>'+(i+1)+'</b><span>'+esc(W[i].title)+'</span></a>'}
   h+='</div><a class="btn pri" href="#/quiz/'+ph.id+'">🎯 Quiz المرحلة'+(q?' (أحسن درجة '+q.best+'/'+q.total+')':'')+'</a></section>'});
  view.innerHTML=h}
-function vProjects(){var h=header()+'<h2>مشاريعك</h2><p class="sub">البورتفوليو بيتبني بالشغل الفعلي. مشروع واحد منشور بـ README كويس أحسن من خمسة ناقصين.</p><div class="note"><b>عدد المنشور: '+published()+' من '+D.ai.projectOrder.length+'</b> علّم الخطوات بالترتيب وانت بتخلصها.</div>';
- D.ai.projectOrder.forEach(function(id){var p=D.ai.projects[id],a=S.proj['ai:'+id]||[],c=pjState(id),st=pjStatus(c);
+function vProjects(){var h=header()+'<h2>مشاريعك</h2><p class="sub">البورتفوليو بيتبني بالشغل الفعلي. مشروع واحد منشور بـ README كويس أحسن من خمسة ناقصين.</p><div class="note"><b>عدد المنشور: '+published()+' من '+C().projectOrder.length+'</b> علّم الخطوات بالترتيب وانت بتخلصها.</div>';
+ C().projectOrder.forEach(function(id){var p=C().projects[id],a=S.proj[cur+':'+id]||[],c=pjState(id),st=pjStatus(c);
   h+='<section class="card"><div class="ph"><div><h3>'+esc(p.t)+'</h3><div class="meta">أسبوع '+p.week+' · '+esc(p.lvl)+' · دبلومة: '+esc(p.dip)+'</div></div><span class="stat" style="background:'+st[1]+'">'+st[0]+'</span></div>'+bar(pct(c,6),st[1])+
   '<dl><dt>الفكرة</dt><dd>'+esc(p.b)+'</dd><dt>التسليم</dt><dd>'+esc(p.d)+'</dd><dt>الداتا</dt><dd>'+esc(p.data)+'</dd></dl>';
   PJ_STEPS.forEach(function(s,i){h+='<div class="blk'+(a[i]?' done':'')+'"><button class="ck" data-p="'+id+':'+i+'" aria-pressed="'+!!a[i]+'"><span>'+(a[i]?'✓':'')+'</span></button><div class="bt"><div class="bh">'+esc(s)+'</div></div></div>'});
@@ -107,19 +112,19 @@ function vWins(){var x=xp(),lv=level(x),tot=totals(),h=header()+'<h2>إنجاز�
  h+='<section class="card big center"><div class="bigem">'+lv.e+'</div><h3>المستوى '+(lv.i+1)+': '+esc(lv.name)+'</h3><div class="meta">'+x+' XP'+(lv.next?' · الجاي عند '+lv.next:'')+'</div></section>';
  h+='<div class="row2"><div class="mini"><b>'+tot.c+'</b><span>ساعة مذاكرة اتسجلت</span></div><div class="mini"><b>'+streak()+'</b><span>سلسلة الأيام</span></div><div class="mini"><b>'+bestStreak()+'</b><span>أطول سلسلة</span></div><div class="mini"><b>'+published()+'</b><span>مشاريع منشورة</span></div></div>';
  h+='<p><a class="btn pri" href="#/ready">💼 جاهز للشغل؟ قايمة التوظيف</a></p><h3>الأوسمة</h3><div class="badges">';
- BADGES.forEach(function(b){var ok=b[2]();h+='<div class="bd'+(ok?' on':'')+'" title="'+esc(b[3])+'"><span>'+(ok?b[0]:'🔒')+'</span><b>'+esc(b[1])+'</b><small>'+esc(b[3])+'</small></div>'});
+ BADGES.concat(phaseBadges()).forEach(function(b){var ok=b[2]();h+='<div class="bd'+(ok?' on':'')+'" title="'+esc(b[3])+'"><span>'+(ok?b[0]:'🔒')+'</span><b>'+esc(b[1])+'</b><small>'+esc(b[3])+'</small></div>'});
  h+='</div>';view.innerHTML=h}
-function vQuiz(id){var ph=D.ai.phases.filter(function(p){return p.id===id})[0],qs=D.ai.quizzes[id];if(!ph||!qs){location.hash='#/plan';return}
+function vQuiz(id){var ph=C().phases.filter(function(p){return p.id===id})[0],qs=C().quizzes[id];if(!ph||!qs){location.hash='#/plan';return}
  var h=header()+'<a class="back" href="#/plan">← الخطة</a><h2>Quiz: '+esc(ph.t)+'</h2><p class="sub">'+qs.length+' أسئلة. اختار الإجابة وبعدين اضغط تصحيح.</p><form id="qf">';
  qs.forEach(function(q,i){h+='<section class="card"><b>'+(i+1)+'. '+esc(q[0])+'</b>';q[1].forEach(function(o,j){h+='<label class="opt"><input type="radio" name="q'+i+'" value="'+j+'"><span>'+esc(o)+'</span></label>'});h+='<div class="exp" id="e'+i+'"></div></section>'});
  h+='<button class="btn pri" type="submit">تصحيح</button><div id="res"></div></form>';view.innerHTML=h;
  $('#qf').addEventListener('submit',function(e){e.preventDefault();var sc=0;qs.forEach(function(q,i){var v=document.querySelector('input[name=q'+i+']:checked'),ok=v&&+v.value===q[2];if(ok)sc++;var ex=$('#e'+i);ex.className='exp '+(ok?'ok':'bad');ex.textContent=(ok?'صح ✓ ':'الصح: '+q[1][q[2]]+'. ')+q[3]});
-  var k='ai:'+id,old=S.quiz[k]||{best:0};S.quiz[k]={best:Math.max(old.best,sc),total:qs.length,last:sc};save();
+  var k=cur+':'+id,old=S.quiz[k]||{best:0};S.quiz[k]={best:Math.max(old.best,sc),total:qs.length,last:sc};save();
   $('#res').innerHTML='<div class="note">درجتك '+sc+' من '+qs.length+(sc===qs.length?' 🎉 ممتاز':sc>=qs.length/2?' 👍 كويس، راجع الغلط':' 💪 راجع المواضيع وأعد المحاولة')+'</div>';$('#res').scrollIntoView({behavior:'smooth',block:'center'})})}
 function vHub(){var h='<div class="hero"><div class="owl big">🦉</div><h1>مركز المهارات</h1><p>مسارات من الصفر للاحتراف، بمصادر مجانية، وجدول 3 ساعات يوميا، وتتبع وتحديات.</p></div>'+header();
  h+='<h2>المهارات</h2><div class="grid">';
- D.skills.forEach(function(s){var ready=s.status==='ready',tt=ready?totals():null;
-  h+='<a class="sk'+(ready?'':' soon')+'" style="--c:'+s.color+'" href="#/'+(ready?'today':'skill/'+s.id)+'"><span class="em">'+s.e+'</span><b>'+esc(s.name)+'</b><small>'+esc(s.short)+'</small><span class="tag">'+(ready?'جاهز · '+pct(tt.c,tt.t)+'%':'جاري البناء')+'</span></a>'});
+ D.skills.forEach(function(s){var ready=s.status==='ready',tt=ready?withCur(s.id,totals):null;
+  h+='<a class="sk'+(ready?'':' soon')+'" style="--c:'+s.color+'" href="#/'+(ready?'open/'+s.id:'skill/'+s.id)+'"><span class="em">'+s.e+'</span><b>'+esc(s.name)+'</b><small>'+esc(s.short)+'</small><span class="tag">'+(ready?'جاهز · '+pct(tt.c,tt.t)+'%':'جاري البناء')+'</span></a>'});
  h+='</div><p><a class="btn" href="#/compare">📊 قارن المهارات والدخل</a> <a class="btn" href="#/about">ℹ️ كلام صريح وتفاصيل</a></p>';
  view.innerHTML=h}
 function vSkill(id){var s=D.skills.filter(function(x){return x.id===id})[0];if(!s){location.hash='#/';return}
@@ -134,37 +139,65 @@ function vAbout(){var i=D.info,h=header()+'<a class="back" href="#/">← الم�
  h+='<section class="card"><h3>مراجعة الفجوات مقابل الخرايط المعروفة</h3><p class="sub">قارنّا بالقوائم المنشورة في roadmap.sh للـ AI Engineer وMLOps وAI Data Scientist (قرينا الشجرة نفسها يوم 25 نوفمبر 2026).</p>'+i.audit.map(function(a){return '<div class="aud"><b>'+esc(a[0])+'</b><p>'+esc(a[1])+'</p></div>'}).join('')+'<a class="lnk" href="https://roadmap.sh/ai-engineer" target="_blank" rel="noopener">🔗 roadmap.sh/ai-engineer</a><a class="lnk" href="https://roadmap.sh/mlops" target="_blank" rel="noopener">🔗 roadmap.sh/mlops</a><a class="lnk" href="https://roadmap.sh/ai-data-scientist" target="_blank" rel="noopener">🔗 roadmap.sh/ai-data-scientist</a></section>';
  h+='<h2>منح ومجاني</h2>'+i.schol.map(function(x){return '<section class="card"><h3>'+esc(x.n)+'</h3><dl><dt>الحالة</dt><dd>'+esc(x.st)+'</dd><dt>الشروط</dt><dd>'+esc(x.el)+'</dd></dl><a class="lnk" href="'+esc(x.u)+'" target="_blank" rel="noopener">🔗 '+esc(x.un)+'</a>'+(x.u2?'<a class="lnk" href="'+esc(x.u2)+'" target="_blank" rel="noopener">🔗 '+esc(x.un2)+'</a>':'')+'</section>'}).join('');
  view.innerHTML=h}
-function vReady(){S.ready=S.ready||{};var n=0,t=D.info.ready.length;D.info.ready.forEach(function(r,i){if(S.ready[i])n++});
+function RL(){return C().ready||D.info.ready}
+function rk(i){return cur==='ai'?String(i):cur+':'+i}
+function vReady(){S.ready=S.ready||{};var n=0,t=RL().length;RL().forEach(function(r,i){if(S.ready[rk(i)])n++});
  var h=header()+'<a class="back" href="#/wins">← إنجازاتي</a><h2>جاهز للشغل؟</h2><p class="sub">الدراسة وحدها مش كفاية. دي مخرجات التوظيف اللي لازم تخلصها.</p>'+bar(pct(n,t),'#ffb703')+'<div class="meta">'+n+' من '+t+'</div><section class="card">';
- D.info.ready.forEach(function(r,i){var d=!!S.ready[i];h+='<div class="blk'+(d?' done':'')+'"><button class="ck" data-r="'+i+'" aria-pressed="'+d+'"><span>'+(d?'✓':'')+'</span></button><div class="bt"><div class="bh">'+esc(r[0])+'</div><div class="lks">'+links(r[1])+'</div></div></div>'});
+ RL().forEach(function(r,i){var d=!!S.ready[rk(i)];h+='<div class="blk'+(d?' done':'')+'"><button class="ck" data-r="'+i+'" aria-pressed="'+d+'"><span>'+(d?'✓':'')+'</span></button><div class="bt"><div class="bh">'+esc(r[0])+'</div><div class="lks">'+links(r[1])+'</div></div></div>'});
  h+='</section><p class="fine">مفيش موقع بيضمن وظيفة. الخطوات دي بتزود فرصك.</p>';view.innerHTML=h}
 function vSettings(){var h=header()+'<h2>الإعدادات والنسخ الاحتياطي</h2>';
  h+='<section class="card"><h3>اسمك</h3><input id="nm" class="inp" value="'+esc(S.name)+'" placeholder="خالد"></section>';
- h+='<section class="card"><h3>تاريخ بداية الخطة</h3><p class="sub">اليوم 1 هو التاريخ ده. نهاية الخطة بعد '+DAYS+' يوم.</p><input id="sd" type="date" class="inp" value="'+S.start.ai+'"><button class="btn" id="sdn">ابدأ من النهاردة</button><div class="meta">نهاية الخطة: '+AR(addDays(S.start.ai,DAYS-1),{day:'numeric',month:'long',year:'numeric'})+'</div></section>';
+ h+='<section class="card"><h3>تاريخ بداية الخطة</h3><p class="sub">اليوم 1 هو التاريخ ده. نهاية الخطة بعد '+DAYS+' يوم.</p><input id="sd" type="date" class="inp" value="'+S.start[cur]+'"><button class="btn" id="sdn">ابدأ من النهاردة</button><div class="meta">نهاية الخطة: '+AR(addDays(S.start[cur],DAYS-1),{day:'numeric',month:'long',year:'numeric'})+'</div></section>';
  h+='<section class="card"><h3>تذكير يومي</h3><p class="sub">الموقع ثابت ومش بيبعت إشعارات. نزّل ملف تقويم (ICS) وافتحه على موبايلك، هيضيف تذكير يومي في تطبيق التقويم.</p><input id="rt" type="time" class="inp" value="'+esc(S.remind)+'"><button class="btn pri" id="ics">تنزيل التذكير اليومي</button></section>';
  h+='<section class="card"><h3>نسخة احتياطية</h3><p class="sub">تقدمك محفوظ على الجهاز ده والمتصفح ده بس. لو مسحت بيانات المتصفح هيضيع. صدّر ملف واحتفظ بيه.</p><button class="btn pri" id="exp">تصدير التقدم (ملف)</button> <label class="btn">استيراد ملف<input id="imp" type="file" accept="application/json,.json" hidden></label><div id="impm" class="meta"></div></section>';
  h+='<section class="card"><h3>مسح كل شيء</h3><button class="btn danger" id="rst">مسح التقدم</button></section>';
  view.innerHTML=h;
  $('#nm').addEventListener('change',function(e){S.name=e.target.value.trim().slice(0,30);save()});
- $('#sd').addEventListener('change',function(e){if(e.target.value){S.start.ai=e.target.value;save();vSettings()}});
- $('#sdn').addEventListener('click',function(){S.start.ai=ds(new Date());save();vSettings()});
+ $('#sd').addEventListener('change',function(e){if(e.target.value){S.start[cur]=e.target.value;save();vSettings()}});
+ $('#sdn').addEventListener('click',function(){S.start[cur]=ds(new Date());save();vSettings()});
  $('#rt').addEventListener('change',function(e){S.remind=e.target.value||'20:00';save()});
- $('#ics').addEventListener('click',function(){var t=(S.remind||'20:00').split(':'),d=S.start.ai.replace(/-/g,'');var ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//learning-hub//AR','BEGIN:VEVENT','UID:daily-3h@learning-hub','DTSTAMP:20260101T000000Z','DTSTART:'+d+'T'+t[0]+t[1]+'00','DTEND:'+d+'T'+(('0'+((+t[0]+3)%24)).slice(-2))+t[1]+'00','RRULE:FREQ=DAILY;COUNT='+DAYS,'SUMMARY:3 ساعات مذاكرة (مركز المهارات)','DESCRIPTION:افتح الموقع واعمل مهام النهاردة','BEGIN:VALARM','TRIGGER:-PT10M','ACTION:DISPLAY','DESCRIPTION:وقت المذاكرة','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');dl('daily-reminder.ics',ics,'text/calendar')});
+ $('#ics').addEventListener('click',function(){var t=(S.remind||'20:00').split(':'),d=S.start[cur].replace(/-/g,'');var ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//learning-hub//AR','BEGIN:VEVENT','UID:daily-3h@learning-hub','DTSTAMP:20260101T000000Z','DTSTART:'+d+'T'+t[0]+t[1]+'00','DTEND:'+d+'T'+(('0'+((+t[0]+3)%24)).slice(-2))+t[1]+'00','RRULE:FREQ=DAILY;COUNT='+DAYS,'SUMMARY:3 ساعات مذاكرة ('+C().name+')','DESCRIPTION:افتح الموقع واعمل مهام النهاردة','BEGIN:VALARM','TRIGGER:-PT10M','ACTION:DISPLAY','DESCRIPTION:وقت المذاكرة','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');dl('daily-reminder.ics',ics,'text/calendar')});
  $('#exp').addEventListener('click',function(){dl('learning-progress-'+ds(new Date())+'.json',JSON.stringify(S,null,1),'application/json')});
  $('#imp').addEventListener('change',function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var o=JSON.parse(r.result);if(!o||typeof o!=='object'||!o.done||!o.start)throw 0;if(!confirm('ده هيستبدل تقدمك الحالي. تكمل؟'))return;S=o;load2();save();$('#impm').textContent='تم الاستيراد ✓'}catch(x){$('#impm').textContent='الملف ده مش نسخة تقدم صحيحة.'}};r.readAsText(f)});
  $('#rst').addEventListener('click',function(){if(confirm('متأكد؟ ده هيمسح كل التقدم.')&&confirm('تأكيد أخير: مسح نهائي؟')){localStorage.removeItem(KEY);S=load();save();vSettings()}})}
-function load2(){S.v=2;S.start=S.start||{};S.done=S.done||{};S.proj=S.proj||{};S.quiz=S.quiz||{};S.log=S.log||{};S.name=S.name||'';S.remind=S.remind||'20:00';if(!S.start.ai)S.start.ai=ds(new Date())}
+function load2(){S.v=2;S.start=S.start||{};S.done=S.done||{};S.proj=S.proj||{};S.quiz=S.quiz||{};S.log=S.log||{};S.name=S.name||'';S.remind=S.remind||'20:00';S.cur=S.cur&&D.courses[S.cur]?S.cur:'ai';Object.keys(D.courses).forEach(function(k){if(!S.start[k])S.start[k]=ds(new Date())});setCur(S.cur)}
 function dl(name,txt,mime){var b=new Blob([txt],{type:mime+';charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
 // ---- router
 function go(){var h=location.hash.replace(/^#\/?/,''),p=h.split('/');route=p[0]||'';
  document.querySelectorAll('.tabs a').forEach(function(a){var r=a.getAttribute('data-r');a.setAttribute('aria-current',(r===route||(r===''&&route===''))?'page':'false')});
- ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,ready:vReady,skill:function(){vSkill(p[1])}}[route]||vHub)();
+ if(route==='open'){var k=p[1];if(D.courses[k]){S.cur=k;save();setCur(k)}location.replace('#/today');return}
+ ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,ready:vReady,skill:function(){vSkill(p[1])}}[route]||vHub)();
  if(!p[1]||route==='today')window.scrollTo(0,0)}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-t]');
  if(b){var before=level(xp()).i,pos=b.getBoundingClientRect().top;toggle(b.getAttribute('data-t'));var y=window.scrollY;go();window.scrollTo(0,y);var af=level(xp()).i;if(af>before)toast('🎉 مستوى جديد: '+level(xp()).name);return}
- b=e.target.closest('[data-r]');if(b&&b.tagName==='BUTTON'){var ri=b.getAttribute('data-r');S.ready=S.ready||{};if(S.ready[ri])delete S.ready[ri];else S.ready[ri]=1;save();var y3=window.scrollY;go();window.scrollTo(0,y3);return}
- b=e.target.closest('[data-p]');if(b){var a=b.getAttribute('data-p').split(':'),k='ai:'+a[0],arr=S.proj[k]||[false,false,false,false,false,false];arr[+a[1]]=!arr[+a[1]];S.proj[k]=arr;save();var y2=window.scrollY;go();window.scrollTo(0,y2);return}
+ b=e.target.closest('[data-r]');if(b&&b.tagName==='BUTTON'){var ri=rk(b.getAttribute('data-r'));S.ready=S.ready||{};if(S.ready[ri])delete S.ready[ri];else S.ready[ri]=1;save();var y3=window.scrollY;go();window.scrollTo(0,y3);return}
+ b=e.target.closest('[data-p]');if(b){var a=b.getAttribute('data-p').split(':'),k=cur+':'+a[0],arr=S.proj[k]||[false,false,false,false,false,false];arr[+a[1]]=!arr[+a[1]];S.proj[k]=arr;save();var y2=window.scrollY;go();window.scrollTo(0,y2);return}
  if(e.target.id==='cprd'){var t=D.info.readme;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){toast('اتنسخ ✓')},function(){var r=document.createRange();r.selectNodeContents($('#rd'));var s=getSelection();s.removeAllRanges();s.addRange(r);toast('حدد النص وانسخه')})}});
+
+// ---- habits
+function hList(){S.habits=S.habits||[];return S.habits}
+function hDate(n){var d=new Date();d.setDate(d.getDate()-n);return ds(d)}
+function hPct(h,n){var c=0;for(var i=0;i<n;i++)if(h.days&&h.days[hDate(i)])c++;return Math.round(c*100/n)}
+function hStreak(h){var n=0,i=h.days&&h.days[hDate(0)]?0:1;while(h.days&&h.days[hDate(i)]){n++;i++}return n}
+function vHabits(){var H=hList(),h=header()+'<h2>متتبع العادات</h2><p class="sub">اكتب عاداتك وعلّم كل يوم. النسب والرسم بيتحدثوا لوحدهم.</p>';
+ h+='<form class="card hf" id="hform"><input id="hnew" maxlength="40" placeholder="عادة جديدة، مثلا: مذاكرة 3 ساعات" aria-label="اسم العادة"><button class="btn pri" type="submit">أضف</button></form>';
+ if(!H.length){h+='<section class="card center"><div class="bigem">🌱</div><p>لسه مفيش عادات. ابدأ بعادة واحدة صغيرة.</p></section>';view.innerHTML=h;return}
+ var days=[];for(var i=6;i>=0;i--)days.push(hDate(i));
+ var tot7=0,tot30=0;H.forEach(function(x){tot7+=hPct(x,7);tot30+=hPct(x,30)});
+ h+='<div class="row2"><div class="mini"><b>'+Math.round(tot7/H.length)+'%</b><span>آخر 7 أيام</span></div><div class="mini"><b>'+Math.round(tot30/H.length)+'%</b><span>آخر 30 يوم</span></div></div>';
+ h+='<section class="card"><h3>آخر 30 يوم</h3>'+hChart(H)+'<div class="meta">كل عمود = نسبة العادات اللي خلصتها في اليوم ده</div></section>';
+ h+='<section class="card"><div class="hgrid"><div class="hrow hhead"><span></span>';days.forEach(function(d){h+='<b>'+AR(d,{day:'numeric'})+'</b>'});h+='<span></span></div>';
+ H.forEach(function(x,ix){h+='<div class="hrow"><span class="hn">'+esc(x.name)+'<small>'+hPct(x,30)+'% · سلسلة '+hStreak(x)+'</small></span>';
+  days.forEach(function(d){var on=x.days&&x.days[d];h+='<button class="hc'+(on?' on':'')+'" data-hb="'+ix+':'+d+'" aria-label="'+esc(x.name)+' '+d+'" aria-pressed="'+(!!on)+'">'+(on?'✓':'')+'</button>'});
+  h+='<button class="hx" data-hd="'+ix+'" aria-label="حذف">✕</button></div>'});
+ h+='</div></section><p class="fine">العادات بتتحفظ في متصفحك وبتدخل في التصدير من الإعدادات.</p>';view.innerHTML=h}
+function hChart(H){var w=300,hh=90,bw=7,g=3,out='<svg viewBox="0 0 '+w+' '+(hh+14)+'" class="hch" role="img" aria-label="رسم نسبة العادات اليومية">';
+ for(var i=0;i<30;i++){var d=hDate(29-i),c=0;H.forEach(function(x){if(x.days&&x.days[d])c++});var p=H.length?c/H.length:0,bh=Math.max(2,p*hh);
+  out+='<rect x="'+((29-i)*(bw+g))+'" y="'+(hh-bh)+'" width="'+bw+'" height="'+bh+'" rx="3" fill="'+(p>=1?'#2f9e8f':p>0?'#8fd0c6':'#e6dfd3')+'"><title>'+d+': '+Math.round(p*100)+'%</title></rect>'}
+ return out+'</svg>'}
+document.addEventListener('submit',function(e){if(e.target.id!=='hform')return;e.preventDefault();var v=$('#hnew').value.trim();if(!v)return;hList().push({name:v,days:{}});save();go()});
+document.addEventListener('click',function(e){var b=e.target.closest('[data-hb]');if(b){var a=b.getAttribute('data-hb').split(':'),x=hList()[+a[0]];if(!x)return;x.days=x.days||{};if(x.days[a[1]])delete x.days[a[1]];else x.days[a[1]]=1;save();var y=window.scrollY;go();window.scrollTo(0,y);return}
+ b=e.target.closest('[data-hd]');if(b&&confirm('حذف العادة دي وكل سجلها؟')){hList().splice(+b.getAttribute('data-hd'),1);save();go()}});
 function toast(m){var t=$('#toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},2600)}
-window.addEventListener('hashchange',go);go();
+setCur(S.cur||'ai');window.addEventListener('hashchange',go);go();
 })();
