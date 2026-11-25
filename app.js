@@ -88,7 +88,7 @@ function vToday(){var n=todayN(),start=S.start[cur],td=ds(new Date()),before=dif
  if(before)h+='<div class="note">الخطة هتبدأ يوم '+AR(start,{day:'numeric',month:'long'})+'. تقدر تبدأ النهاردة من <a href="#/settings">الإعدادات</a>.</div>';
  var missed=0,first=null;for(var k=1;k<n;k++){var p=dayProg(k);if(p.c<p.t){missed++;if(!first)first=k}}
  if(missed>0)h+='<div class="note warn">متأخر في '+missed+' يوم. مفيش مشكلة: كمّل من آخر نقطة. <a href="#/plan/'+(dayInfo(first).wi)+'">افتح اليوم الفايت</a> أو انقل تاريخ البداية من <a href="#/settings">الإعدادات</a>.</div>';
- h+=dayCard(n,true);
+ h+=dayCard(n,true)+checkin();
  var tot=totals(),end=addDays(start,calEnd(DAYS)-1);
  h+='<div class="row2"><div class="mini"><b>'+pct(tot.c,tot.t)+'%</b><span>من الخطة كلها</span></div><div class="mini"><b>'+AR(end,{day:'numeric',month:'short',year:'numeric'})+'</b><span>نهاية الخطة المحددة</span></div></div>';
  if(n<DAYS){h+='<h3>الجاي</h3>';for(var j=n+1;j<=Math.min(DAYS,n+2);j++){var di=dayInfo(j);h+='<div class="peek">'+(j-n===1?'بكرة':'بعد بكرة')+': '+(di.topic?'📌 '+esc(di.topic.t):'🧪 مشروع أو مراجعة')+'</div>'}}
@@ -155,7 +155,7 @@ function vSettings(){var h=header()+'<h2>الإعدادات والنسخ الا�
  h+='<section class="card"><h3>اسمك</h3><input id="nm" class="inp" value="'+esc(S.name)+'" placeholder="خالد"></section>';
 h+='<section class="card"><h3>سرعتك</h3><p class="sub">اختار سرعة جاهزة أو عدّل الساعات بنفسك. الجدول والتواريخ بيتحسبوا تاني.</p><div class="hsel">'+PACES.map(function(p){return '<button class="chip'+(curPace()===p[0]?' on':'')+'" data-pace="'+p[0]+'">'+p[1]+' '+p[2]+' · '+p[3]+' س × '+p[4]+' أيام</button>'}).join('')+'</div><div class="meta">'+PACES.map(function(p){return p[1]+' '+p[2]+': '+p[5]}).join('<br>')+'</div><div class="meta">لا السرعة العالية بتضمن إتقان، ولا الهادية بتقلل الفايدة. الاستمرارية أهم.</div></section>';
  h+='<section class="card"><h3>ساعاتك في اليوم</h3><p class="sub">غيّرها في أي وقت. تقدمك بيفضل زي ما هو والجدول بيتحسب تاني.</p><div class="hsel">'+[1,2,3,4,5,6,8].map(function(x){return '<button class="chip'+(x===hpd()?' on':'')+'" data-h="'+x+'">'+x+' س</button>'}).join('')+'</div><div class="meta">'+Object.keys(D.courses).map(function(k){return withCur(k,function(){return esc(C().name)+': '+SEQ.length+' ساعة، '+DAYS+' يوم دراسة، تخلص بعد '+calEnd(DAYS)+' يوم تقويم (حوالي '+Math.round(calEnd(DAYS)/30.4*10)/10+' شهر)'})}).join('<br>')+'</div></section>';
- h+='<section class="card"><h3>ابدأ من مرحلة</h3><p class="sub">لو عندك أساس، اعمل اختبار المرحلة من صفحة الخطة، ولو نجحت ابدأ من اللي بعدها.</p><select id="frm" class="inp">'+C().phases.map(function(p){return '<option value="'+(p.w[0]-1)+'"'+(fromW()===p.w[0]-1?' selected':'')+'>'+esc(p.e+' '+p.t)+'</option>'}).join('')+'</select></section>';
+ h+='<section class="card"><h3>ارفع أو نزّل مستواك</h3><p class="sub">اختار المرحلة اللي تبدأ منها في أي وقت، وتقدمك القديم بيفضل محفوظ. لو عندك أساس، اعمل اختبار المرحلة من صفحة الخطة، ولو نجحت ابدأ من اللي بعدها.</p><select id="frm" class="inp">'+C().phases.map(function(p){return '<option value="'+(p.w[0]-1)+'"'+(fromW()===p.w[0]-1?' selected':'')+'>'+esc(p.e+' '+p.t)+'</option>'}).join('')+'</select></section>';
  h+='<section class="card"><h3>تاريخ بداية الخطة</h3><p class="sub">اليوم 1 هو التاريخ ده. نهاية الخطة بعد '+DAYS+' يوم.</p><input id="sd" type="date" class="inp" value="'+S.start[cur]+'"><button class="btn" id="sdn">ابدأ من النهاردة</button><div class="meta">نهاية الخطة: '+AR(addDays(S.start[cur],calEnd(DAYS)-1),{day:'numeric',month:'long',year:'numeric'})+'</div></section>';
  h+='<section class="card"><h3>تذكير يومي</h3><p class="sub">الموقع ثابت ومش بيبعت إشعارات. نزّل ملف تقويم (ICS) وافتحه على موبايلك، هيضيف تذكير يومي في تطبيق التقويم.</p><input id="rt" type="time" class="inp" value="'+esc(S.remind)+'"><button class="btn pri" id="ics">تنزيل التذكير اليومي</button></section>';
  h+='<section class="card"><h3>نسخة احتياطية</h3><p class="sub">تقدمك محفوظ على الجهاز ده والمتصفح ده بس. لو مسحت بيانات المتصفح هيضيع. صدّر ملف واحتفظ بيه.</p><button class="btn pri" id="exp">تصدير التقدم (ملف)</button> <label class="btn">استيراد ملف<input id="imp" type="file" accept="application/json,.json" hidden></label><div id="impm" class="meta"></div></section>';
@@ -247,6 +247,21 @@ function vPlace(){var L=plLevels(),h=header()+'<h2>اختبار تحديد ال�
 function bindPl(){var z=$('#plz');if(z)z.addEventListener('click',function(){S.from=S.from||{};S.from[cur]=0;save();setCur(cur);PL={i:0,sc:[],cur:cur};location.hash='#/today'});
  var g=$('#plgo');if(g)g.addEventListener('click',function(){var L=plLevels(),ph=L[+g.getAttribute('data-st')];S.from=S.from||{};S.from[cur]=ph.w[0]-1;save();setCur(cur);PL={i:0,sc:[],cur:cur};location.hash='#/today'});
  var r=$('#plre');if(r)r.addEventListener('click',function(){PL={i:0,sc:[],cur:cur};vPlace()})}
+
+// ---- adaptive check-in
+function ciList(){S.ci=S.ci||{};var a=[];Object.keys(S.ci).forEach(function(k){var v=S.ci[k];if(v.c===cur)a.push({d:k.split('|')[0],r:v.r})});a.sort(function(x,y){return x.d<y.d?-1:1});return a}
+function curPhaseIx(){var P=C().phases,t=SEQ.filter(function(x){return !isDone(x.id)})[0],wi=t?t.wi:W.length-1,ix=0;P.forEach(function(p,i){if(wi+1>=p.w[0]&&wi+1<=p.w[1])ix=i});return ix}
+function suggestion(){var l=ciList().slice(-5);if(l.length<3)return null;var last=l[l.length-1].d;if((S.sg||{})[cur]===last)return null;var hard=l.filter(function(x){return x.r===1}).length,easy=l.filter(function(x){return x.r===3}).length,P=C().phases,ix=curPhaseIx(),acts=[];
+ if(hard>=3){var m='الأيام الأخيرة كانت صعبة. ممكن تهدّي: قلل الساعات أو ارجع مرحلة.';if(hpd()>1)acts.push(['hpd',hpd()-1,'قلل لـ '+(hpd()-1)+' ساعة']);if(ix>0)acts.push(['ph',P[ix-1].w[0]-1,'ارجع لمرحلة: '+P[ix-1].t]);return{m:m,a:acts,k:last}}
+ if(easy>=3){var m2='الأيام اللي فاتت كانت سهلة. ممكن ترفع مستواك: زوّد الساعات أو انتقل لمرحلة أعلى.';if(hpd()<8)acts.push(['hpd',hpd()+1,'زوّد لـ '+(hpd()+1)+' ساعة']);if(ix<P.length-1&&P[ix+1].id!=='aix')acts.push(['ph',P[ix+1].w[0]-1,'ابدأ مرحلة: '+P[ix+1].t]);return{m:m2,a:acts,k:last}}return null}
+function checkin(){var td=ds(new Date()),k=td+'|'+cur,v=(S.ci||{})[k],h='<section class="card"><h3>إزاي كان يومك؟</h3><div class="hsel">'+[[1,'😓 صعب'],[2,'🙂 تمام'],[3,'😎 سهل']].map(function(o){return '<button class="chip'+(v&&v.r===o[0]?' on':'')+'" data-ci="'+o[0]+'">'+o[1]+'</button>'}).join('')+'</div><div class="meta">إجاباتك بتتحفظ على جهازك وبتساعد الموقع يقترح تعديل. الاقتراح مجرد اقتراح وتقدر ترفضه أو تعدّل بنفسك من الإعدادات.</div>',sg=suggestion();
+ if(sg)h+='<div class="note">'+esc(sg.m)+'<div class="hsel">'+sg.a.map(function(a,i){return '<button class="chip" data-sg="'+i+'">'+esc(a[2])+'</button>'}).join('')+'<button class="chip" data-sgx="1">تجاهل</button></div></div>';
+ return h+'</section>'}
+document.addEventListener('click',function(e){var b=e.target.closest('[data-ci],[data-sg],[data-sgx]');if(!b)return;
+ if(b.hasAttribute('data-ci')){S.ci=S.ci||{};S.ci[ds(new Date())+'|'+cur]={c:cur,r:+b.getAttribute('data-ci')};save();var y=window.scrollY;go();window.scrollTo(0,y);return}
+ var sg=suggestion();if(!sg)return;S.sg=S.sg||{};
+ if(b.hasAttribute('data-sg')){var a=sg.a[+b.getAttribute('data-sg')];if(a[0]==='hpd')S.hpd=a[1];else{S.from=S.from||{};S.from[cur]=a[1]}setCur(cur);toast('اتعدّل الجدول. تقدر ترجع من الإعدادات')}
+ S.sg[cur]=sg.k;save();go()});
 function toast(m){var t=$('#toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},2600)}
 setCur(S.cur||'ai');window.addEventListener('hashchange',go);go();
 })();
