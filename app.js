@@ -3,7 +3,8 @@
 var D=window.DATA, KEY='learnhub.v2', cur='ai', W, DAYS;
 function C(){return D.courses[cur]}
 var SEQ=[],ALL=[];
-function hpd(){return Math.max(1,Math.min(10,+((S||{}).hpd)||3))}
+function hpd(){var c=((S||{}).hpdc||{})[cur];return Math.max(1,Math.min(10,+c||+((S||{}).hpd)||3))}
+function setH(v){S.hpdc=S.hpdc||{};S.hpdc[cur]=v}function setD(v){S.dpwc=S.dpwc||{};S.dpwc[cur]=v}
 function buildSeq(){SEQ=[];var L=C().labels;W.forEach(function(w,wi){var ph=C().phases.filter(function(p){return p.id===w.p})[0],k=0;
  for(var d=0;d<5;d++){var t=w.topics[Math.min(w.topics.length-1,Math.floor(d*w.topics.length/5))];
   [{k:'learn',e:'📖',t:'اتعلّم: '+t.t,links:t.links},{k:'do',e:'🛠️',t:L.d.replace('{t}',t.t)},{k:'rev',e:'✍️',t:L.r}].forEach(function(b){SEQ.push({wi:wi,ph:ph,topic:t,b:b,id:cur+':'+wi+':'+(k++)})})}
@@ -11,7 +12,7 @@ function buildSeq(){SEQ=[];var L=C().labels;W.forEach(function(w,wi){var ph=C().
  (pj?[{k:'proj',e:'🧪',t:L.p+pj.t+' (ابدأ أو كمّل)'},{k:'proj',e:'💻',t:L.p2},{k:'rev',e:'📝',t:L.p3}]:[{k:'rev',e:'🔁',t:'راجع مواضيع الأسبوع كلها (ملخصاتك)'},{k:'do',e:'🛠️',t:L.x},{k:'rev',e:'📝',t:'اكتب 5 أسطر: إيه اللي اتعلمته الأسبوع ده'}]).forEach(function(b){SEQ.push({wi:wi,ph:ph,topic:null,project:pj,b:b,id:cur+':'+wi+':'+(k++)})})})}
 function fromW(){return ((S&&S.from)||{})[cur]||0}
 function calcDays(){DAYS=Math.max(1,Math.ceil(SEQ.length/hpd()))}
-function setCur(k){cur=k;W=C().weeks;buildSeq();var f=fromW();if(f)SEQ=SEQ.filter(function(x){return x.wi>=f});var g=goalOf();if(g&&g.w!=='all'){var set={};g.w.forEach(function(n){set[n-1]=1});SEQ=SEQ.filter(function(x){return set[x.wi]})}calcDays()}
+function setCur(k){cur=k;W=C().weeks;buildSeq();var f=fromW();if(f)SEQ=SEQ.filter(function(x){return x.wi>=f});var g=goalOf();if(g&&g.w!=='all'){var set={};g.w.forEach(function(n){set[n-1]=1});SEQ=SEQ.filter(function(x){return set[x.wi]})}var sk=((S&&S.skip)||{})[k]||[];if(sk.length){SEQ=SEQ.filter(function(x){return sk.indexOf(W[x.wi].p)<0})}calcDays()}
 function goalOf(){var gl=C().goals||[],id=((S&&S.goal)||{})[cur]||'full';return gl.filter(function(g){return g.id===id})[0]||null}
 function withCur(k,fn){var o=cur;setCur(k);var r=fn();setCur(o);return r}
 function each(fn){var o=cur;Object.keys(D.courses).forEach(function(k){setCur(k);fn(k)});setCur(o)}
@@ -48,7 +49,7 @@ function xp(){var t=allBlocks()*10,p=0;for(var k in S.proj){for(var i=0;i<6;i++)
 function level(x){var i=0;for(var j=0;j<LV.length;j++)if(x>=LV[j][0])i=j;var nx=LV[i+1];return{i:i,e:LV[i][1],name:LV[i][2],cur:LV[i][0],next:nx?nx[0]:null}}
 function streak(){var d=ds(new Date()),s=0;if(!S.log[d])d=addDays(d,-1);while(S.log[d]){s++;d=addDays(d,-1)}return s}
 function bestStreak(){var ks=Object.keys(S.log).sort(),b=0,c=0,p=null;ks.forEach(function(k){c=(p&&diffDays(k,p)===1)?c+1:1;if(c>b)b=c;p=k});return b}
-function dpw(){return Math.max(3,Math.min(7,+((S||{}).dpw)||6))}
+function dpw(){var c=((S||{}).dpwc||{})[cur];return Math.max(3,Math.min(7,+c||+((S||{}).dpw)||6))}
 function calEnd(days){return Math.ceil(days*7/dpw())}
 var PACES=[['fast','🔥','مكثف',6,7,'نهاية سريعة، محتاج انضباط عالي وراحة كافية'],['mid','⚖️','متوسط',3,6,'الأنسب لمعظم الناس'],['calm','🌿','هادي',2,5,'بدون ضغط، يناسب الدراسة أو الشغل']];
 function curPace(){var p=PACES.filter(function(x){return x[3]===hpd()&&x[4]===dpw()})[0];return p?p[0]:'custom'}
@@ -154,7 +155,7 @@ function vReady(){S.ready=S.ready||{};var n=0,t=RL().length;RL().forEach(functio
  h+='</section><p class="fine">مفيش موقع بيضمن وظيفة. الخطوات دي بتزود فرصك.</p>';view.innerHTML=h}
 function vSettings(){var h=header()+'<h2>الإعدادات والنسخ الاحتياطي</h2>';
  h+='<section class="card"><h3>اسمك</h3><input id="nm" class="inp" value="'+esc(S.name)+'" placeholder="خالد"></section>';
-h+=dlHtml()+pairHtml();
+h+='<section class="card"><h3>🧭 أسئلة المسار</h3><p class="sub">غيّر هدفك ووقتك ومستواك والمراحل اللي عايزها لمسار ده.</p><a class="btn pri" href="#/q/'+cur+'">غيّر إجاباتك</a></section>'+dlHtml()+pairHtml();
  h+='<section class="card"><h3>هدفك</h3><p class="sub">مش لازم تخلص المسار كله. اختار الهدف، وارفعه لما تحب. تقدمك بيفضل محفوظ.</p><div class="hsel">'+(C().goals||[]).map(function(g){var n=g.w==='all'?W.length:g.w.length;return '<button class="chip'+((goalOf()||{}).id===g.id?' on':'')+'" data-goal="'+g.id+'">'+g.e+' '+g.name+' · '+n+' أسبوع</button>'}).join('')+'</div><div class="meta">'+esc((goalOf()||{}).note||'')+'</div><div class="meta">الوقت = ساعات الهدف ÷ ساعاتك في اليوم. ده تقدير للساعات المخططة مش وعد بنتيجة.</div></section>';
  h+='<section class="card"><h3>سرعتك</h3><p class="sub">اختار سرعة جاهزة أو عدّل الساعات بنفسك. الجدول والتواريخ بيتحسبوا تاني.</p><div class="hsel">'+PACES.map(function(p){return '<button class="chip'+(curPace()===p[0]?' on':'')+'" data-pace="'+p[0]+'">'+p[1]+' '+p[2]+' · '+p[3]+' س × '+p[4]+' أيام</button>'}).join('')+'</div><div class="meta">'+PACES.map(function(p){return p[1]+' '+p[2]+': '+p[5]}).join('<br>')+'</div><div class="meta">لا السرعة العالية بتضمن إتقان، ولا الهادية بتقلل الفايدة. الاستمرارية أهم.</div></section>';
  h+='<section class="card"><h3>ساعاتك في اليوم</h3><p class="sub">غيّرها في أي وقت. تقدمك بيفضل زي ما هو والجدول بيتحسب تاني.</p><div class="hsel">'+[1,2,3,4,5,6,8].map(function(x){return '<button class="chip'+(x===hpd()?' on':'')+'" data-h="'+x+'">'+x+' س</button>'}).join('')+'</div><div class="meta">'+Object.keys(D.courses).map(function(k){return withCur(k,function(){return esc(C().name)+': '+SEQ.length+' ساعة، '+DAYS+' يوم دراسة، تخلص بعد '+calEnd(DAYS)+' يوم تقويم (حوالي '+Math.round(calEnd(DAYS)/30.4*10)/10+' شهر)'})}).join('<br>')+'</div></section>';
@@ -169,8 +170,8 @@ h+=dlHtml()+pairHtml();
  document.querySelectorAll('[data-dlm]').forEach(function(b){b.addEventListener('click',function(){S.dlm=S.dlm||{};S.dlm[cur]=+b.getAttribute('data-dlm');save();vSettings()})});
  document.querySelectorAll('[data-dlg]').forEach(function(b){b.addEventListener('click',function(){S.goal=S.goal||{};S.goal[cur]=b.getAttribute('data-dlg');save();setCur(cur);vSettings()})});
  document.querySelectorAll('[data-goal]').forEach(function(b){b.addEventListener('click',function(){S.goal=S.goal||{};S.goal[cur]=b.getAttribute('data-goal');save();setCur(cur);vSettings()})});
- document.querySelectorAll('[data-pace]').forEach(function(b){b.addEventListener('click',function(){var p=PACES.filter(function(x){return x[0]===b.getAttribute('data-pace')})[0];S.hpd=p[3];S.dpw=p[4];save();setCur(cur);vSettings()})});
- document.querySelectorAll('[data-h]').forEach(function(b){b.addEventListener('click',function(){S.hpd=+b.getAttribute('data-h');save();setCur(cur);vSettings()})});
+ document.querySelectorAll('[data-pace]').forEach(function(b){b.addEventListener('click',function(){var p=PACES.filter(function(x){return x[0]===b.getAttribute('data-pace')})[0];setH(p[3]);setD(p[4]);save();setCur(cur);vSettings()})});
+ document.querySelectorAll('[data-h]').forEach(function(b){b.addEventListener('click',function(){setH(+b.getAttribute('data-h'));save();setCur(cur);vSettings()})});
  $('#frm').addEventListener('change',function(e){S.from=S.from||{};S.from[cur]=+e.target.value;save();setCur(cur);vSettings()});
  $('#sd').addEventListener('change',function(e){if(e.target.value){S.start[cur]=e.target.value;save();vSettings()}});
  $('#sdn').addEventListener('click',function(){S.start[cur]=ds(new Date());save();vSettings()});
@@ -184,7 +185,8 @@ function dl(name,txt,mime){var b=new Blob([txt],{type:mime+';charset=utf-8'}),a=
 // ---- router
 function go(){var h=location.hash.replace(/^#\/?/,''),p=h.split('/');route=p[0]||'';
  document.querySelectorAll('.tabs a').forEach(function(a){var r=a.getAttribute('data-r');a.setAttribute('aria-current',(r===route||(r===''&&route===''))?'page':'false')});
- if(route==='open'){var k=p[1];if(D.courses[k]){S.cur=k;save();setCur(k)}location.replace('#/today');return}
+ if(route==='open'){var k=p[1];if(D.courses[k]){S.cur=k;save();setCur(k)}S.qd=S.qd||{};location.replace(S.qd[k]?'#/today':'#/q/'+k);return}
+ if(route==='q'){var k2=p[1];if(D.courses[k2]&&k2!==cur){S.cur=k2;save();setCur(k2)}vQ();return}
  ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,books:vBooks,skill:function(){vSkill(p[1])}}[route]||vHub)();
  if(!p[1]||route==='today')window.scrollTo(0,0)}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-t]');
@@ -267,7 +269,7 @@ function checkin(){var td=ds(new Date()),k=td+'|'+cur,v=(S.ci||{})[k],h='<sectio
 document.addEventListener('click',function(e){var b=e.target.closest('[data-ci],[data-sg],[data-sgx]');if(!b)return;
  if(b.hasAttribute('data-ci')){S.ci=S.ci||{};S.ci[ds(new Date())+'|'+cur]={c:cur,r:+b.getAttribute('data-ci')};save();var y=window.scrollY;go();window.scrollTo(0,y);return}
  var sg=suggestion();if(!sg)return;S.sg=S.sg||{};
- if(b.hasAttribute('data-sg')){var a=sg.a[+b.getAttribute('data-sg')];if(a[0]==='hpd')S.hpd=a[1];else{S.from=S.from||{};S.from[cur]=a[1]}setCur(cur);toast('اتعدّل الجدول. تقدر ترجع من الإعدادات')}
+ if(b.hasAttribute('data-sg')){var a=sg.a[+b.getAttribute('data-sg')];if(a[0]==='hpd')setH(a[1]);else{S.from=S.from||{};S.from[cur]=a[1]}setCur(cur);toast('اتعدّل الجدول. تقدر ترجع من الإعدادات')}
  S.sg[cur]=sg.k;save();go()});
 
 function goalHours(g){return (g.w==='all'?W.length:g.w.length)*18}
@@ -292,6 +294,27 @@ function booksHtml(){var b=C().books;if(!b||!b.length)return '<div class="note">
  var h='<div class="note"><b>الكتب اختيارية</b>الكتب دي بتكمّل المسار، وكلها موجودة فعلا (اتأكدت من Open Library). المسار نفسه مجاني، فلو مش هتشتري، الكتب المجانية والبدائل مكتوبة جنب كل كتاب. ماحطيتش أي روابط تحميل غير قانوني.</div>';
  b.forEach(function(x){h+='<section class="card"><h3>📖 '+esc(x[0])+'</h3><div class="meta">'+esc(x[1])+'</div><p>'+esc(x[2])+'</p><div class="meta">مكانه في المسار: '+esc(x[3])+' · '+(x[4]==='free'?'🆓 مجاني وقانوني':'💵 مدفوع')+'</div><div class="meta">بديل مجاني: '+esc(x[5])+'</div></section>'});return h}
 function vBooks(){view.innerHTML=header()+'<a class="back" href="#/">← المهارات</a><h2>كتب مقترحة: '+esc(C().name)+'</h2>'+booksHtml()}
+
+var QS=null;
+function qInit(){var ph=C().phases,f=fromW(),fp=0;ph.forEach(function(p,i){if(p.w[0]-1<=f)fp=i});return {goal:((S.goal||{})[cur])||'full',h:hpd(),d:dpw(),from:fp,skip:((S.skip||{})[cur]||[]).slice(),qa:Object.assign({},((S.qa||{})[cur])||{}),c:cur}}
+function chipQ(k,v,on,l){return '<button class="chip'+(on?' on':'')+'" data-qk="'+k+'" data-qv="'+esc(String(v))+'">'+esc(l)+'</button>'}
+function vQ(){if(!QS||QS.c!==cur)QS=qInit();var c=C(),ph=c.phases,gl=c.goals||[],h=header()+'<a class="back" href="#/">← المهارات</a><h2>🧭 خلّي المسار على مقاسك: '+esc(c.name)+'</h2><p class="sub">كل إجابة تقدر تغيّرها في أي وقت من الإعدادات. مفيش اختيار نهائي.</p>';
+ h+='<section class="card"><h3>1. عايز توصل لإيه؟</h3><div class="hsel">'+gl.map(function(g){return chipQ('goal',g.id,QS.goal===g.id,g.e+' '+g.name)}).join('')+'</div><div class="meta">'+esc((gl.filter(function(g){return g.id===QS.goal})[0]||{note:''}).note)+'</div></section>';
+ h+='<section class="card"><h3>2. وقتك في اليوم</h3><div class="hsel">'+[1,2,3,4,6].map(function(x){return chipQ('h',x,QS.h===x,x+' ساعة')}).join('')+'</div><div class="meta">أيام في الأسبوع:</div><div class="hsel">'+[3,4,5,6,7].map(function(x){return chipQ('d',x,QS.d===x,x+' أيام')}).join('')+'</div></section>';
+ h+='<section class="card"><h3>3. مستواك دلوقتي</h3><div class="hsel">'+ph.map(function(p,i){return chipQ('from',i,QS.from===i,(i===0?'من الأول: ':'أبدأ من: ')+p.e+' '+p.t)}).join('')+'</div><div class="meta">مش متأكد؟ <a href="#/place">اعمل اختبار تحديد المستوى</a>.</div></section>';
+ h+='<section class="card"><h3>4. مراحل مش عايزها دلوقتي</h3><div class="hsel">'+ph.map(function(p){return chipQ('skip',p.id,QS.skip.indexOf(p.id)>=0,(QS.skip.indexOf(p.id)>=0?'مستبعدة: ':'')+p.e+' '+p.t)}).join('')+'</div><div class="meta">تقدر ترجعها وقت ما تحب.</div></section>';
+ (c.qs||[]).forEach(function(q,qi){h+='<section class="card"><h3>'+(5+qi)+'. '+esc(q.t)+'</h3><div class="hsel">'+q.o.map(function(o,oi){return chipQ('qa'+qi,oi,QS.qa[q.id]===oi,o.l)}).join('')+'</div></section>'});
+ h+='<p><button class="btn pri" id="qgo">احفظ وابدأ</button> <button class="btn" id="qskip">تخطي (الإعداد الافتراضي)</button></p><p class="fine">الأرقام تقديرات. لو لقيت المسار سهل أو صعب، غيّره من هنا أو من الإعدادات.</p>';
+ view.innerHTML=h;
+ document.querySelectorAll('[data-qk]').forEach(function(b){b.addEventListener('click',function(){var k=b.getAttribute('data-qk'),v=b.getAttribute('data-qv');
+  if(k==='goal')QS.goal=v;else if(k==='h')QS.h=+v;else if(k==='d')QS.d=+v;else if(k==='from')QS.from=+v;
+  else if(k==='skip'){var i=QS.skip.indexOf(v);if(i>=0)QS.skip.splice(i,1);else QS.skip.push(v)}
+  else if(k.indexOf('qa')===0){var q=(c.qs||[])[+k.slice(2)];QS.qa[q.id]=+v}
+  var y=window.scrollY;vQ();window.scrollTo(0,y)})});
+ $('#qgo').addEventListener('click',function(){S.goal=S.goal||{};S.goal[cur]=QS.goal;setH(QS.h);setD(QS.d);S.from=S.from||{};S.from[cur]=ph[QS.from]?ph[QS.from].w[0]-1:0;S.skip=S.skip||{};S.skip[cur]=QS.skip;S.qa=S.qa||{};S.qa[cur]=QS.qa;
+  (c.qs||[]).forEach(function(q){var o=q.o[QS.qa[q.id]];if(o&&o.e){if(o.e.goal)S.goal[cur]=o.e.goal;if(o.e.skip)o.e.skip.forEach(function(x){if(S.skip[cur].indexOf(x)<0)S.skip[cur].push(x)});if(o.e.h)setH(o.e.h)}});
+  S.qd=S.qd||{};S.qd[cur]=1;save();setCur(cur);QS=null;toast('تم ضبط المسار على مقاسك');location.hash='#/today'});
+ $('#qskip').addEventListener('click',function(){S.qd=S.qd||{};S.qd[cur]=1;save();QS=null;location.hash='#/today'})}
 function toast(m){var t=$('#toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},2600)}
 setCur(S.cur||'ai');window.addEventListener('hashchange',go);go();
 })();
