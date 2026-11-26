@@ -8,7 +8,7 @@ var cache={};
 function build(l){if(cache[l])return cache[l];var m={},keys=Object.keys(T).filter(function(k){var v=T[k];var t=v[IDX[l]]||v[0];if(t){m[k]=t;return true}return false}).sort(function(a,b){return b.length-a.length});
 var esc=function(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')};
 var re=new RegExp('(?<![\\u0600-\\u06FF])(?:'+keys.map(esc).join('|')+')(?![\\u0600-\\u06FF])','g');cache[l]={m:m,re:re};return cache[l]}
-function tr(s){if(cur==='ar'||!s||!/[\u0600-\u06FF]/.test(s))return s;var b=build(cur);return s.replace(b.re,function(x){return b.m[x]||x})}
+function tr(s){if(cur==='ar'||!s||!/[\u0600-\u06FF]/.test(s))return s;var b=build(cur);var r=s.replace(b.re,function(x){return b.m[x]||x});var ca=function(t){return(t.match(/[\u0600-\u06FF]/g)||[]).length};return ca(r)>0.3*ca(s)?s:r}
 function walk(root){if(cur==='ar')return;var w=document.createTreeWalker(root,4,null),n,a=[];while(n=w.nextNode())a.push(n);a.forEach(function(t){var p=t.parentNode;if(p&&(p.tagName==='SCRIPT'||p.tagName==='STYLE'||p.tagName==='PRE'))return;var v=t.nodeValue,r=tr(v);if(r!==v)t.nodeValue=r});
 if(root.querySelectorAll)root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(function(e){['placeholder','title','aria-label'].forEach(function(k){var v=e.getAttribute(k);if(v){var r=tr(v);if(r!==v)e.setAttribute(k,r)}})});
 if(document.title){var d=tr(document.title);if(d!==document.title)document.title=d}}
