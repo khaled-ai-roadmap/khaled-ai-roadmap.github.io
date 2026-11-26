@@ -129,7 +129,7 @@ function vQuiz(id){var ph=C().phases.filter(function(p){return p.id===id})[0],qs
  $('#qf').addEventListener('submit',function(e){e.preventDefault();var sc=0;qs.forEach(function(q,i){var v=document.querySelector('input[name=q'+i+']:checked'),ok=v&&+v.value===q[2];if(ok)sc++;var ex=$('#e'+i);ex.className='exp '+(ok?'ok':'bad');ex.textContent=(ok?'صح ✓ ':'الصح: '+q[1][q[2]]+'. ')+q[3]});
   var k=cur+':'+id,old=S.quiz[k]||{best:0};S.quiz[k]={best:Math.max(old.best,sc),total:qs.length,last:sc};save();
   $('#res').innerHTML='<div class="note">درجتك '+sc+' من '+qs.length+(sc===qs.length?' 🎉 ممتاز':sc>=qs.length/2?' 👍 كويس، راجع الغلط':' 💪 راجع المواضيع وأعد المحاولة')+'</div>';$('#res').scrollIntoView({behavior:'smooth',block:'center'})})}
-function vHub(){var h='<div class="hero">'+LOGO+'<h1>مركز المهارات</h1><p>مسارات من الصفر للاحتراف، بمصادر مجانية، وجدول بالساعات اللي تناسبك، وتتبع وتحديات. <a href="#/start">ابدأ بالأسئلة</a></p></div>'+header();
+function vHub(){var h='<div class="hero">'+LOGO+'<h1>مركز المهارات</h1><p>مسارات من الصفر للاحتراف، بمصادر مجانية، وجدول بالساعات اللي تناسبك، وتتبع وتحديات. <a href="#/start">ابدأ بالأسئلة</a> · <a href="#/find">دليل مراكز تدريب الأطباء</a></p></div>'+header();
  h+='<h2>المهارات</h2><div class="grid">';
  D.skills.forEach(function(s){var ready=s.status==='ready',tt=ready?withCur(s.id,totals):null;
   h+='<a class="sk'+(ready?'':' soon')+'" style="--c:'+s.color+'" href="#/'+(ready?'open/'+s.id:'skill/'+s.id)+'"><span class="em">'+ico(s.id)+'</span><b>'+esc(s.name)+'</b><small>'+esc(s.short)+'</small><span class="tag">'+(ready?'جاهز · '+pct(tt.c,tt.t)+'%':'جاري البناء')+'</span></a>'});
@@ -188,7 +188,7 @@ function go(){var h=location.hash.replace(/^#\/?/,''),p=h.split('/');route=p[0]|
  document.querySelectorAll('.tabs a').forEach(function(a){var r=a.getAttribute('data-r');a.setAttribute('aria-current',(r===route||(r===''&&route===''))?'page':'false')});
  if(route==='open'){var k=p[1];if(D.courses[k]){S.cur=k;save();setCur(k)}S.qd=S.qd||{};location.replace(S.qd[k]?'#/today':'#/q/'+k);return}
  if(route==='q'){var k2=p[1];if(D.courses[k2]&&k2!==cur){S.cur=k2;save();setCur(k2)}vQ();return}
- ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,books:vBooks,space:function(){window.vSpace(view)},skill:function(){vSkill(p[1])}}[route]||vHub)();
+ ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,find:function(){window.vFind&&window.vFind(view)},books:vBooks,space:function(){window.vSpace(view)},skill:function(){vSkill(p[1])}}[route]||vHub)();
  if(!p[1]||route==='today')window.scrollTo(0,0)}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-t]');
  if(b){var before=level(xp()).i,pos=b.getBoundingClientRect().top;toggle(b.getAttribute('data-t'));var y=window.scrollY;go();window.scrollTo(0,y);var af=level(xp()).i;if(af>before)toast('🎉 مستوى جديد: '+level(xp()).name);return}
