@@ -188,7 +188,7 @@ function go(){var h=location.hash.replace(/^#\/?/,''),p=h.split('/');route=p[0]|
  document.querySelectorAll('.tabs a').forEach(function(a){var r=a.getAttribute('data-r');a.setAttribute('aria-current',(r===route||(r===''&&route===''))?'page':'false')});
  if(route==='open'){var k=p[1];if(D.courses[k]){S.cur=k;save();setCur(k)}S.qd=S.qd||{};location.replace(S.qd[k]?'#/today':'#/q/'+k);return}
  if(route==='q'){var k2=p[1];if(D.courses[k2]&&k2!==cur){S.cur=k2;save();setCur(k2)}vQ();return}
- ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,find:function(){window.vFind&&window.vFind(view)},books:vBooks,space:function(){window.vSpace(view)},skill:function(){vSkill(p[1])}}[route]||vHub)();
+ ({'':vHub,today:vToday,plan:function(){vPlan(p[1])},projects:vProjects,wins:vWins,quiz:function(){vQuiz(p[1])},compare:vCompare,about:vAbout,settings:vSettings,habits:vHabits,place:vPlace,start:vStart,ready:vReady,find:function(){window.vFind&&window.vFind(view)},fac:function(){window.vFac&&window.vFac(view)},books:vBooks,space:function(){window.vSpace(view)},skill:function(){vSkill(p[1])}}[route]||vHub)();
  if(!p[1]||route==='today')window.scrollTo(0,0)}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-t]');
  if(b){var before=level(xp()).i,pos=b.getBoundingClientRect().top;toggle(b.getAttribute('data-t'));var y=window.scrollY;go();window.scrollTo(0,y);var af=level(xp()).i;if(af>before)toast('🎉 مستوى جديد: '+level(xp()).name);return}
